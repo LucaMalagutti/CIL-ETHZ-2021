@@ -1,15 +1,19 @@
 repos:
+-   repo: https://github.com/psf/black
+    rev: 21.4b1
+    hooks:
+    -   id: black
+        language_version: python3
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.1
+    hooks:
+    - id: flake8
+-   repo: https://github.com/timothycrosley/isort
+    rev: 5.8.0
+    hooks:
+    - id: isort
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
--   repo: https://github.com/psf/black
-    rev: stable
-    hooks:
-    -   id: black
-        language_version: python3
--   repo: https://github.com/timothycrosley/isort
-    rev: 4.3.21
-    hooks:
-    - id: isort
