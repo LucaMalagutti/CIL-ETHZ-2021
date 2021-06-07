@@ -1,6 +1,9 @@
 bin/
 lib64
 pyvenv.cfg
+.DS_STORE
+**/.DS_STORE
+.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
