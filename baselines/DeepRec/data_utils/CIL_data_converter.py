@@ -43,7 +43,7 @@ def main(args):
     out_prefix_train = "baselines/DeepRec/data/train/CIL_data"
     out_prefix_valid = "baselines/DeepRec/data/valid/CIL_data"
     out_prefix_submission = "baselines/DeepRec/data/submission/CIL_data"
-    percent = 1.0  # 100%
+    percent = 0.9  # 90%
     data = dict()
 
     total_rating_count = 0

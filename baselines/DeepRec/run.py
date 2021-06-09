@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import wandb as wandb
 from logger import Logger
 from reco_encoder.data import input_layer
 from reco_encoder.model import model
@@ -210,6 +211,25 @@ def set_optimizer(args, rencoder):
 
 def main():
     logger = Logger(args.logdir)
+    # 1. Start a new run
+    wandb.init(
+        project="CIL-2021",
+        entity="spaghetticode",
+        config={
+            "batch_size": args.batch_size,
+            "layer1_dim": args.hidden_layers.split(",")[0],
+            "layer2_dim": args.hidden_layers.split(",")[1],
+            "layer3_dim": args.hidden_layers.split(",")[2],
+            "activation": args.non_linearity_type,
+            "optimizer": args.optimizer,
+            "learning_rate": args.lr,
+            "weight_decay": args.weight_decay,
+            "noise_prob": args.noise_prob,
+            "dropout": args.drop_prob,
+            "dense_refeeding_steps": args.aug_step,
+        },
+    )
+
     params = dict()
     params["batch_size"] = args.batch_size
     params["data_dir"] = args.path_to_train_data
@@ -248,6 +268,7 @@ def main():
         dp_drop_prob=args.drop_prob,
         last_layer_activations=not args.skip_last_layer_nl,
     )
+    wandb.watch(rencoder)
     os.makedirs(args.logdir, exist_ok=True)
     model_checkpoint = args.logdir + "/model"
     path_to_model = Path(model_checkpoint)
@@ -287,14 +308,14 @@ def main():
         rencoder.train()
         total_epoch_loss = 0.0
         denom = 0.0
-        if args.optimizer == "momentum":
-            scheduler.step()
+
         for i, mb in enumerate(data_layer.iterate_one_epoch()):
             inputs = Variable(mb.cuda().to_dense() if use_gpu else mb.to_dense())
             optimizer.zero_grad()
             outputs = rencoder(inputs)
             loss, num_ratings = model.MSEloss(outputs, inputs)
             loss = loss / num_ratings
+            # wandb.log({"MSE_loss": loss})
             loss.backward()
             optimizer.step()
             global_step += 1
@@ -302,10 +323,10 @@ def main():
             t_loss_denom += 1
 
             if i % args.summary_frequency == 0:
-                print("[%d, %5d] RMSE: %.7f" % (epoch, i, sqrt(t_loss / t_loss_denom)))
-                logger.scalar_summary(
-                    "Training_RMSE", sqrt(t_loss / t_loss_denom), global_step
-                )
+                rmse = sqrt(t_loss / t_loss_denom)
+                # wandb.log({"train_RMSE": rmse})
+                print("[%d, %5d] RMSE: %.7f" % (epoch, i, rmse))
+                logger.scalar_summary("Training_RMSE", rmse, global_step)
                 t_loss = 0
                 t_loss_denom = 0.0
                 log_var_and_grad_summaries(
@@ -327,7 +348,7 @@ def main():
 
             # if args.aug_step > 0 and i % args.aug_step == 0 and i > 0:
             if args.aug_step > 0:
-                # Magic data augmentation trick happen here
+                # Magic data augmentation trick happen here (dense refeeding)
                 for t in range(args.aug_step):
                     inputs = Variable(outputs.data)
                     if args.noise_prob > 0.0:
@@ -336,10 +357,15 @@ def main():
                     outputs = rencoder(inputs)
                     loss, num_ratings = model.MSEloss(outputs, inputs)
                     loss = loss / num_ratings
+                    # wandb.log({"MSE_loss": loss})
                     loss.backward()
                     optimizer.step()
 
+        if args.optimizer == "momentum":
+            scheduler.step()
+
         e_end_time = time.time()
+        wandb.log({"train_RMSE": sqrt(total_epoch_loss / denom)})
         print(
             "Total epoch {} finished in {} seconds with TRAINING RMSE loss: {}".format(
                 epoch, e_end_time - e_start_time, sqrt(total_epoch_loss / denom)
@@ -352,6 +378,7 @@ def main():
         if epoch % args.save_every == 0 or epoch == args.num_epochs - 1:
             if args.path_to_eval_data != "":
                 eval_loss = do_eval(rencoder, eval_data_layer)
+                wandb.log({"val_RMSE": eval_loss, "epoch": epoch})
                 print("Epoch {} EVALUATION LOSS: {}".format(epoch, eval_loss))
                 logger.scalar_summary("EVALUATION_RMSE", eval_loss, epoch)
             else:
@@ -364,17 +391,20 @@ def main():
     print("Saving model to {}".format(model_checkpoint + ".last"))
     torch.save(rencoder.state_dict(), model_checkpoint + ".last")
 
-    # save to onnx
-    dummy_input = Variable(
-        torch.randn(params["batch_size"], data_layer.vector_dim).type(torch.float)
-    )
-    torch.onnx.export(
-        rencoder.float(),
-        dummy_input.cuda() if use_gpu else dummy_input,
-        model_checkpoint + ".onnx",
-        verbose=True,
-    )
-    print("ONNX model saved to {}!".format(model_checkpoint + ".onnx"))
+    print("Done")
+    quit()
+
+    # # save to onnx
+    # dummy_input = Variable(
+    #     torch.randn(params["batch_size"], data_layer.vector_dim).type(torch.float)
+    # )
+    # torch.onnx.export(
+    #     rencoder.float(),
+    #     dummy_input.cuda() if use_gpu else dummy_input,
+    #     model_checkpoint + ".onnx",
+    #     verbose=True,
+    # )
+    # print("ONNX model saved to {}!".format(model_checkpoint + ".onnx"))
 
 
 if __name__ == "__main__":
