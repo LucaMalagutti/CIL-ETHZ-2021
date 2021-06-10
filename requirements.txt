@@ -53,3 +53,4 @@ wurlitzer==2.1.0
 zipp==3.4.1
 zope.interface==5.4.0
 torch==1.5.0+cu101
+git+https://github.com/gbolmier/funk-svd
