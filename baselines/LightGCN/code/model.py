@@ -41,8 +41,8 @@ class PairWiseModel(BasicModel):
 class PureMF(BasicModel):
     def __init__(self, config: dict, dataset: BasicDataset):
         super(PureMF, self).__init__()
-        self.num_users = dataset.n_users
-        self.num_items = dataset.m_items
+        self.num_users = dataset.get_n_users
+        self.num_items = dataset.get_m_items
         self.latent_dim = config["latent_dim_rec"]
         self.f = nn.Sigmoid()
         self.__init_weight()
@@ -98,8 +98,8 @@ class LightGCN(BasicModel):
         self.__init_weight()
 
     def __init_weight(self):
-        self.num_users = self.dataset.n_users
-        self.num_items = self.dataset.m_items
+        self.num_users = self.dataset.get_n_users
+        self.num_items = self.dataset.get_m_items
         self.latent_dim = self.config["latent_dim_rec"]
         self.n_layers = self.config["lightGCN_n_layers"]
         self.keep_prob = self.config["keep_prob"]
@@ -127,7 +127,7 @@ class LightGCN(BasicModel):
             )
             print("use pretarined data")
         self.f = nn.Sigmoid()
-        self.Graph = self.dataset.getSparseGraph()
+        self.Graph = self.dataset.get_sparse_graph()
         print(f"lgn is already to go(dropout:{self.config['dropout']})")
 
         # print("save_txt")

@@ -56,7 +56,7 @@ def BPR_train_original(dataset, recommend_model, loss_class, epoch, neg_k=1, w=N
     aver_loss = aver_loss / total_batch
     time_info = timer.dict()
     timer.zero()
-    return f"loss{aver_loss:.3f}-{time_info}"
+    return f"loss {aver_loss:.3f}-{time_info}"
 
 
 def test_one_batch(X):
@@ -79,7 +79,7 @@ def test_one_batch(X):
 def Test(dataset, Recmodel, epoch, w=None, multicore=0):
     u_batch_size = world.config["test_u_batch_size"]
     dataset: utils.BasicDataset
-    testDict: dict = dataset.testDict
+    test_dict: dict = dataset.get_test_dict
     Recmodel: model.LightGCN
     # eval mode with no dropout
     Recmodel = Recmodel.eval()
@@ -92,7 +92,7 @@ def Test(dataset, Recmodel, epoch, w=None, multicore=0):
         "ndcg": np.zeros(len(world.topks)),
     }
     with torch.no_grad():
-        users = list(testDict.keys())
+        users = list(test_dict.keys())
         try:
             assert u_batch_size <= len(users) / 10
         except AssertionError:
@@ -106,8 +106,8 @@ def Test(dataset, Recmodel, epoch, w=None, multicore=0):
         # ratings = []
         total_batch = len(users) // u_batch_size + 1
         for batch_users in utils.minibatch(users, batch_size=u_batch_size):
-            allPos = dataset.getUserPosItems(batch_users)
-            groundTrue = [testDict[u] for u in batch_users]
+            allPos = dataset.get_user_pos_items(batch_users)  # training samples
+            groundTrue = [test_dict[u] for u in batch_users]  # testing samples
             batch_users_gpu = torch.Tensor(batch_users).long()
             batch_users_gpu = batch_users_gpu.to(world.device)
 

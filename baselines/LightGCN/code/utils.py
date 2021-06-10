@@ -52,11 +52,11 @@ class BPRLoss:
 
 def UniformSample_original(dataset, neg_ratio=1):
     dataset: BasicDataset
-    allPos = dataset.allPos
+    items_per_user = dataset.get_items_per_user
     # start = time()
     if sample_ext:
         S = sampling.sample_negative(
-            dataset.n_users, dataset.m_items, dataset.trainDataSize, allPos, neg_ratio
+            dataset.get_n_users, dataset.get_m_items, dataset.train_data_size, items_per_user, neg_ratio
         )
     else:
         S = UniformSample_original_python(dataset)
@@ -71,22 +71,22 @@ def UniformSample_original_python(dataset):
     """
     # total_start = time()
     dataset: BasicDataset
-    user_num = dataset.trainDataSize
-    users = np.random.randint(0, dataset.n_users, user_num)
-    allPos = dataset.allPos
+    user_num = dataset.train_data_size
+    users = np.random.randint(0, dataset.get_n_users, user_num)
+    items_per_user = dataset.get_items_per_user
     S = []
     sample_time1 = 0.0
     sample_time2 = 0.0
     for i, user in enumerate(users):
         start = time()
-        posForUser = allPos[user]
+        posForUser = items_per_user[user]
         if len(posForUser) == 0:
             continue
         sample_time2 += time() - start
         posindex = np.random.randint(0, len(posForUser))
         positem = posForUser[posindex]
         while True:
-            negitem = np.random.randint(0, dataset.m_items)
+            negitem = np.random.randint(0, dataset.get_m_items)
             if negitem in posForUser:
                 continue
             else:
@@ -273,7 +273,7 @@ def AUC(all_item_scores, dataset, test_data):
     design for a single user
     """
     dataset: BasicDataset
-    r_all = np.zeros((dataset.m_items,))
+    r_all = np.zeros((dataset.get_m_items,))
     r_all[test_data] = 1
     r = r_all[all_item_scores >= 0]
     test_item_scores = all_item_scores[all_item_scores >= 0]

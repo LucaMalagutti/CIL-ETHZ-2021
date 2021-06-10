@@ -74,4 +74,5 @@ def parse_args():
     parser.add_argument(
         "--model", type=str, default="lgn", help="rec-model, support [mf, lgn]"
     )
+
     return parser.parse_args()
