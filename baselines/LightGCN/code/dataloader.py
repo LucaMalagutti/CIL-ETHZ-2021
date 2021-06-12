@@ -86,17 +86,18 @@ class CIL(BasicDataset):
         self.train_data_size = train_df.shape[0]
         self.test_data_size = test_df.shape[0]
 
-        self.UserItemNet = sp.load_npz("../data/cil/adj_mat.npz")
-        self.n_user = self.UserItemNet.shape[0]
-        self.m_item = self.UserItemNet.shape[1]
+        self.user_item_net = sp.load_npz("../data/cil/adj_mat.npz")
+        self.test_user_item_net = sp.load_npz("../data/cil/test_adj_mat.npz")
+        self.n_user = self.user_item_net.shape[0]
+        self.m_item = self.user_item_net.shape[1]
         self.Graph = None
         print(f"{self.train_data_size} interactions for training")
         print(f"{self.test_data_size} interactions for testing")
         print(f"{world.dataset} Sparsity : {(self.train_data_size + self.test_data_size) / self.n_user / self.m_item}")
 
-        self.users_D = np.array(self.UserItemNet.sum(axis=1)).squeeze()
+        self.users_D = np.array(self.user_item_net.sum(axis=1)).squeeze()
         self.users_D[self.users_D == 0.0] = 3.0  # TODO: temporary value
-        self.items_D = np.array(self.UserItemNet.sum(axis=0)).squeeze()
+        self.items_D = np.array(self.user_item_net.sum(axis=0)).squeeze()
         self.items_D[self.items_D == 0.0] = 3.0  # TODO: temporary value
 
         # pre-calculate
@@ -125,10 +126,10 @@ class CIL(BasicDataset):
         return self.items_per_user
 
     def get_user_pos_items(self, users):
-        posItems = []
+        pos_items = []
         for user in users:
-            posItems.append(self.UserItemNet[user].nonzero()[1])
-        return posItems
+            pos_items.append(self.user_item_net[user].nonzero()[1])
+        return pos_items
 
     def __build_test(self, users):
         """
@@ -137,7 +138,7 @@ class CIL(BasicDataset):
         """
         test_data = {}
         for user in users:
-            test_data[user] = self.UserItemNet[user].nonzero()[1]
+            test_data[user] = self.test_user_item_net[user].nonzero()[1]
         return test_data
 
     def _convert_sp_mat_to_sp_tensor(self, X):
@@ -162,7 +163,7 @@ class CIL(BasicDataset):
                     dtype=np.float32,
                 )
                 A = A.tolil()
-                R = self.UserItemNet.tolil()
+                R = self.user_item_net.tolil()
                 A[: self.n_user, self.n_user:] = R
                 A[self.n_user:, : self.n_user] = R.T
 
@@ -223,7 +224,7 @@ class LastFM(BasicDataset):
             shape=(self.n_user, self.n_user),
         )
         # (users,items), bipartite graph
-        self.UserItemNet = csr_matrix(
+        self.user_item_net = csr_matrix(
             (np.ones(len(self.trainUser)), (self.trainUser, self.trainItem)),
             shape=(self.n_user, self.m_item),
         )
@@ -304,16 +305,16 @@ class LastFM(BasicDataset):
         return test_data
 
     def get_user_pos_items(self, users):
-        posItems = []
+        pos_items = []
         for user in users:
-            posItems.append(self.UserItemNet[user].nonzero()[1])
-        return posItems
+            pos_items.append(self.user_item_net[user].nonzero()[1])
+        return pos_items
 
     def get_user_neg_items(self, users):
-        negItems = []
+        neg_items = []
         for user in users:
-            negItems.append(self.allNeg[user])
-        return negItems
+            neg_items.append(self.allNeg[user])
+        return neg_items
 
     def __getitem__(self, index):
         user = self.trainUniqueUsers[index]
@@ -396,13 +397,13 @@ class Loader(BasicDataset):
         )
 
         # (users,items), bipartite graph
-        self.UserItemNet = csr_matrix(
+        self.user_item_net = csr_matrix(
             (np.ones(len(self.trainUser)), (self.trainUser, self.trainItem)),
             shape=(self.n_user, self.m_item),
         )
-        self.users_D = np.array(self.UserItemNet.sum(axis=1)).squeeze()
+        self.users_D = np.array(self.user_item_net.sum(axis=1)).squeeze()
         self.users_D[self.users_D == 0.0] = 1
-        self.items_D = np.array(self.UserItemNet.sum(axis=0)).squeeze()
+        self.items_D = np.array(self.user_item_net.sum(axis=0)).squeeze()
         self.items_D[self.items_D == 0.0] = 1.0
         # pre-calculate
         self.items_per_user = self.get_user_pos_items(list(range(self.n_user)))
@@ -468,7 +469,7 @@ class Loader(BasicDataset):
                     dtype=np.float32,
                 )
                 adj_mat = adj_mat.tolil()
-                R = self.UserItemNet.tolil()
+                R = self.user_item_net.tolil()
                 adj_mat[: self.n_user, self.n_user:] = R
                 adj_mat[self.n_user:, : self.n_user] = R.T
                 adj_mat = adj_mat.todok()
@@ -509,7 +510,7 @@ class Loader(BasicDataset):
         return test_data
 
     def get_user_pos_items(self, users):
-        posItems = []
+        pos_items = []
         for user in users:
-            posItems.append(self.UserItemNet[user].nonzero()[1])
-        return posItems
+            pos_items.append(self.user_item_net[user].nonzero()[1])
+        return pos_items

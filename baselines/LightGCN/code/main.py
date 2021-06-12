@@ -16,15 +16,15 @@ print(">>SEED:", world.seed)
 import register
 from register import dataset
 
-Recmodel = register.MODELS[world.model_name](world.config, dataset)
-Recmodel = Recmodel.to(world.device)
-bpr = utils.BPRLoss(Recmodel, world.config)
+model = register.MODELS[world.model_name](world.config, dataset)
+model = model.to(world.device)
+bpr = utils.BPRLoss(model, world.config)
 
 weight_file = utils.getFileName()
 print(f"load and save to {weight_file}")
 if world.LOAD:
     try:
-        Recmodel.load_state_dict(
+        model.load_state_dict(
             torch.load(weight_file, map_location=torch.device("cpu"))
         )
         world.cprint(f"loaded model weights from {weight_file}")
@@ -46,12 +46,12 @@ try:
         start = time.time()
         if epoch % 10 == 0:
             cprint("[TEST]")
-            Procedure.Test(dataset, Recmodel, epoch, w, world.config["multicore"])
+            Procedure.test(dataset, model, epoch, w, world.config["multicore"])
         output_information = Procedure.BPR_train_original(
-            dataset, Recmodel, bpr, epoch, neg_k=Neg_k, w=w
+            dataset, model, bpr, epoch, w=w
         )
         print(f"EPOCH[{epoch+1}/{world.TRAIN_epochs}] {output_information}")
-        torch.save(Recmodel.state_dict(), weight_file)
+        torch.save(model.state_dict(), weight_file)
 finally:
     if world.tensorboard:
         w.close()

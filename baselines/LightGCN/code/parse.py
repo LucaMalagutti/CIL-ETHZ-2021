@@ -60,8 +60,7 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument(
         "--multicore",
-        type=int,
-        default=0,
+        action='store_true',
         help="whether we use multiprocessing or not in test",
     )
     parser.add_argument(

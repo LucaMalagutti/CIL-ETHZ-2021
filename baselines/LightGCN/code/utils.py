@@ -32,11 +32,11 @@ except Exception:
 
 
 class BPRLoss:
-    def __init__(self, recmodel: PairWiseModel, config: dict):
-        self.model = recmodel
+    def __init__(self, model: PairWiseModel, config: dict):
+        self.model = model
         self.weight_decay = config["decay"]
         self.lr = config["lr"]
-        self.opt = optim.Adam(recmodel.parameters(), lr=self.lr)
+        self.opt = optim.Adam(model.parameters(), lr=self.lr)
 
     def stageOne(self, users, pos, neg):
         loss, reg_loss = self.model.bpr_loss(users, pos, neg)
@@ -283,9 +283,9 @@ def AUC(all_item_scores, dataset, test_data):
 def getLabel(test_data, pred_data):
     r = []
     for i in range(len(test_data)):
-        groundTrue = test_data[i]
+        ground_truth = test_data[i]
         predictTopK = pred_data[i]
-        pred = list(map(lambda x: x in groundTrue, predictTopK))
+        pred = list(map(lambda x: x in ground_truth, predictTopK))
         pred = np.array(pred).astype("float")
         r.append(pred)
     return np.array(r).astype("float")

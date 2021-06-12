@@ -35,12 +35,19 @@ test_df = pd.DataFrame(data=test_dataset)
 test_df.columns = column_names
 test_df.to_csv("../data/cil/test.csv", index=False)
 
-# create and save full matrix of observed ratings
+# create and save full training matrix of observed ratings
 filled_training_matrix = np.full((number_of_users, number_of_movies), 0)
 for user, movie, rating in zip(train_users, train_movies, train_ratings):
     filled_training_matrix[user][movie] = rating
 
 sp.save_npz("../data/cil/adj_mat", sp.csr_matrix(filled_training_matrix))
+
+# create and save full testing matrix of observed ratings
+filled_testing_matrix = np.full((number_of_users, number_of_movies), 0)
+for user, movie, rating in zip(test_users, test_movies, test_ratings):
+    filled_testing_matrix[user][movie] = rating
+
+sp.save_npz("../data/cil/test_adj_mat", sp.csr_matrix(filled_testing_matrix))
 
 
 

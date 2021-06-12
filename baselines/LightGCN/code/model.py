@@ -18,7 +18,7 @@ class BasicModel(nn.Module):
     def __init__(self):
         super(BasicModel, self).__init__()
 
-    def getUsersRating(self, users):
+    def get_user_rating(self, users):
         raise NotImplementedError
 
 
@@ -45,9 +45,9 @@ class PureMF(BasicModel):
         self.num_items = dataset.get_m_items
         self.latent_dim = config["latent_dim_rec"]
         self.f = nn.Sigmoid()
-        self.__init_weight()
+        self._init_weight()
 
-    def __init_weight(self):
+    def _init_weight(self):
         self.embedding_user = torch.nn.Embedding(
             num_embeddings=self.num_users, embedding_dim=self.latent_dim
         )
@@ -56,7 +56,7 @@ class PureMF(BasicModel):
         )
         print("using Normal distribution N(0,1) initialization for PureMF")
 
-    def getUsersRating(self, users):
+    def get_user_rating(self, users):
         users = users.long()
         users_emb = self.embedding_user(users)
         items_emb = self.embedding_item.weight
@@ -95,9 +95,9 @@ class LightGCN(BasicModel):
         super(LightGCN, self).__init__()
         self.config = config
         self.dataset: BasicDataset = dataset
-        self.__init_weight()
+        self._init_weight()
 
-    def __init_weight(self):
+    def _init_weight(self):
         self.num_users = self.dataset.get_n_users
         self.num_items = self.dataset.get_m_items
         self.latent_dim = self.config["latent_dim_rec"]
@@ -132,7 +132,7 @@ class LightGCN(BasicModel):
 
         # print("save_txt")
 
-    def __dropout_x(self, x, keep_prob):
+    def _dropout_x(self, x, keep_prob):
         size = x.size()
         index = x.indices().t()
         values = x.values()
@@ -143,19 +143,16 @@ class LightGCN(BasicModel):
         g = torch.sparse.FloatTensor(index.t(), values, size)
         return g
 
-    def __dropout(self, keep_prob):
+    def _dropout(self, keep_prob):
         if self.A_split:
             graph = []
             for g in self.Graph:
-                graph.append(self.__dropout_x(g, keep_prob))
+                graph.append(self._dropout_x(g, keep_prob))
         else:
-            graph = self.__dropout_x(self.Graph, keep_prob)
+            graph = self._dropout_x(self.Graph, keep_prob)
         return graph
 
-    def computer(self):
-        """
-        propagate methods for lightGCN
-        """
+    def propagate_embeddings(self):
         users_emb = self.embedding_user.weight
         items_emb = self.embedding_item.weight
         all_emb = torch.cat([users_emb, items_emb])
@@ -163,22 +160,21 @@ class LightGCN(BasicModel):
         embs = [all_emb]
         if self.config["dropout"]:
             if self.training:
-                print("droping")
-                g_droped = self.__dropout(self.keep_prob)
+                g_dropped = self._dropout(self.keep_prob)
             else:
-                g_droped = self.Graph
+                g_dropped = self.Graph
         else:
-            g_droped = self.Graph
+            g_dropped = self.Graph
 
-        for layer in range(self.n_layers):
+        for _ in range(self.n_layers):
             if self.A_split:
                 temp_emb = []
-                for f in range(len(g_droped)):
-                    temp_emb.append(torch.sparse.mm(g_droped[f], all_emb))
+                for f in range(len(g_dropped)):
+                    temp_emb.append(torch.sparse.mm(g_dropped[f], all_emb))
                 side_emb = torch.cat(temp_emb, dim=0)
                 all_emb = side_emb
             else:
-                all_emb = torch.sparse.mm(g_droped, all_emb)
+                all_emb = torch.sparse.mm(g_dropped, all_emb)
             embs.append(all_emb)
         embs = torch.stack(embs, dim=1)
         # print(embs.size())
@@ -186,15 +182,15 @@ class LightGCN(BasicModel):
         users, items = torch.split(light_out, [self.num_users, self.num_items])
         return users, items
 
-    def getUsersRating(self, users):
-        all_users, all_items = self.computer()
+    def get_user_rating(self, users):
+        all_users, all_items = self.propagate_embeddings()
         users_emb = all_users[users.long()]
         items_emb = all_items
         rating = self.f(torch.matmul(users_emb, items_emb.t()))
         return rating
 
-    def getEmbedding(self, users, pos_items, neg_items):
-        all_users, all_items = self.computer()
+    def get_embedding(self, users, pos_items, neg_items):
+        all_users, all_items = self.propagate_embeddings()
         users_emb = all_users[users]
         pos_emb = all_items[pos_items]
         neg_emb = all_items[neg_items]
@@ -204,7 +200,7 @@ class LightGCN(BasicModel):
         return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
 
     def bpr_loss(self, users, pos, neg):
-        (users_emb, pos_emb, neg_emb, userEmb0, posEmb0, negEmb0) = self.getEmbedding(
+        (users_emb, pos_emb, neg_emb, userEmb0, posEmb0, negEmb0) = self.get_embedding(
             users.long(), pos.long(), neg.long()
         )
         reg_loss = (
@@ -227,9 +223,7 @@ class LightGCN(BasicModel):
 
     def forward(self, users, items):
         # compute embedding
-        all_users, all_items = self.computer()
-        # print('forward')
-        # all_users, all_items = self.computer()
+        all_users, all_items = self.propagate_embeddings()
         users_emb = all_users[users]
         items_emb = all_items[items]
         inner_pro = torch.mul(users_emb, items_emb)
