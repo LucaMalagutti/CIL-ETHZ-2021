@@ -25,13 +25,23 @@ def train(args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    # RMSE = RMSELoss()
+    RMSE = RMSELoss()
 
+    PRT_FREQ = 100
+
+    training_loss = 0.0
     for i_batch, batch in enumerate(train_dataloader):
         optimizer.zero_grad()
 
-        print(batch.shape)
-        break
+        scores = model(batch)
+        loss = RMSE(scores, batch[:, 2])
+        loss.backward()
+        optimizer.step()
+
+        training_loss += loss.item()
+        if i_batch % PRT_FREQ == 0:
+            print(training_loss / PRT_FREQ)
+            training_loss = 0.0
 
 
 if __name__ == "__main__":
@@ -50,7 +60,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--n_layer",
+        "--n_layers",
         type=int,
         default=3,
         help="number of iterations of the aggregation function in LightGCN",
