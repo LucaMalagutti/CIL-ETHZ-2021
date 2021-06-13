@@ -30,18 +30,19 @@ def train(args):
     PRT_FREQ = 100
 
     training_loss = 0.0
-    for i_batch, batch in enumerate(train_dataloader):
-        optimizer.zero_grad()
+    for _ in range(args.epochs):
+        for i_batch, batch in enumerate(train_dataloader):
+            optimizer.zero_grad()
 
-        scores = model(batch)
-        loss = RMSE(scores, batch[:, 2])
-        loss.backward()
-        optimizer.step()
+            scores = model(batch)
+            loss = RMSE(scores, batch[:, 2])
+            loss.backward()
+            optimizer.step()
 
-        training_loss += loss.item()
-        if i_batch % PRT_FREQ == 0:
-            print(training_loss / PRT_FREQ)
-            training_loss = 0.0
+            training_loss += loss.item()
+            if i_batch % PRT_FREQ == (PRT_FREQ - 1):
+                print(training_loss / PRT_FREQ)
+                training_loss = 0.0
 
 
 if __name__ == "__main__":
@@ -66,7 +67,7 @@ if __name__ == "__main__":
         help="number of iterations of the aggregation function in LightGCN",
     )
 
-    parser.add_argument("--lr", type=float, default=0.001, help="the learning rate")
+    parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
 
     parser.add_argument(
         "--dropout", type=float, default=0.0, help="dropout probability 0 to disable it"

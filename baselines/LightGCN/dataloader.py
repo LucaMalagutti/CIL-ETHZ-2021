@@ -12,9 +12,12 @@ class CIL(Dataset):
         self.train_df = np.loadtxt(
             open(os.path.join(path, "train.csv"), "rb"), delimiter=",", skiprows=1
         )
+        self.train_df = self.train_df.astype(np.float32)
+
         self.val_df = np.loadtxt(
             open(os.path.join(path, "val.csv"), "rb"), delimiter=",", skiprows=1
         )
+        self.val_df = self.val_df.astype(np.float32)
 
     def __getitem__(self, idx):
         if self.eval:

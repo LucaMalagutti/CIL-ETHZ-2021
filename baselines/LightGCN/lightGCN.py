@@ -20,6 +20,7 @@ class LightGCN(nn.Module):
         self.embedding_user = torch.nn.Embedding(
             num_embeddings=self.n_users, embedding_dim=args.emb_size
         )
+
         self.embedding_item = torch.nn.Embedding(
             num_embeddings=self.n_items, embedding_dim=args.emb_size
         )
@@ -89,8 +90,8 @@ class LightGCN(nn.Module):
         users_idx = batch[:, 0]
         items_idx = batch[:, 1]
 
-        batch_users_emb = users_emb[users_idx]
-        batch_items_emb = items_emb[items_idx]
+        batch_users_emb = users_emb[users_idx.long()]
+        batch_items_emb = items_emb[items_idx.long()]
 
         scores_matrix = batch_users_emb @ batch_items_emb.T
 
