@@ -6,41 +6,53 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class CIL(Dataset):
-    def __init__(self, eval=False, path="data/"):
-        self.eval = eval
-
+    def __init__(self, split="train", path="data/"):
+        self.split = split
         self.train_df = np.loadtxt(
-            open(os.path.join(path, "train.csv"), "rb"), delimiter=",", skiprows=1
+            open(os.path.join(path, "train.csv"), "rb"),
+            delimiter=",",
+            skiprows=1,
+            dtype=np.float32,
         )
-        self.train_df = self.train_df.astype(np.float32)
-
         self.val_df = np.loadtxt(
-            open(os.path.join(path, "val.csv"), "rb"), delimiter=",", skiprows=1
+            open(os.path.join(path, "val.csv"), "rb"),
+            delimiter=",",
+            skiprows=1,
+            dtype=np.float32,
         )
-        self.val_df = self.val_df.astype(np.float32)
+        self.test_df = np.loadtxt(
+            open(os.path.join(path, "sub.csv"), "rb"),
+            delimiter=",",
+            skiprows=1,
+            dtype=np.float32,
+        )
 
     def __getitem__(self, idx):
-        if self.eval:
+        if self.split == "eval":
             return torch.from_numpy(self.val_df[idx])
-        else:
-            return torch.from_numpy(self.train_df[idx])
+        elif self.split == "test":
+            return torch.from_numpy(self.test_df[idx])
+
+        return torch.from_numpy(self.train_df[idx])
 
     def __len__(self):
-        if self.eval:
+        if self.split == "eval":
             return self.val_df.shape[0]
-        else:
-            return self.train_df.shape[0]
+        elif self.split == "test":
+            return self.test_df.shape[0]
+
+        return self.train_df.shape[0]
 
 
-def get_dataloader(args, eval=False):
-    dataset = CIL(eval)
+def get_dataloader(args, split="train"):
+    dataset = CIL(split)
 
     dataloader = DataLoader(
         dataset,
         batch_size=args.batch_size,
         shuffle=True,
         pin_memory=True,
-        drop_last=True,
+        drop_last=False,
     )
 
     print("Loading data with %d samples" % len(dataset))

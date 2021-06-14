@@ -5,6 +5,9 @@ pyvenv.cfg
 baselines/.DS_STORE
 **/.DS_STORE
 .idea/
+checkpoints/
+submissions/
+wandb/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
