@@ -10,22 +10,23 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import wandb as wandb
 from logger import Logger
 from reco_encoder.data import input_layer
 from reco_encoder.model import model
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
 
+import wandb as wandb
+
 parser = argparse.ArgumentParser(description="RecoEncoder")
 parser.add_argument(
-    "--lr", type=float, default=0.00001, metavar="N", help="learning rate"
+    "--learning_rate", type=float, default=0.00001, metavar="N", help="learning rate"
 )
 parser.add_argument(
     "--weight_decay", type=float, default=0.0, metavar="N", help="L2 weight decay"
 )
 parser.add_argument(
-    "--drop_prob", type=float, default=0.0, metavar="N", help="dropout drop probability"
+    "--dropout", type=float, default=0.0, metavar="N", help="dropout drop probability"
 )
 parser.add_argument(
     "--noise_prob", type=float, default=0.0, metavar="N", help="noise probability"
@@ -36,12 +37,12 @@ parser.add_argument(
 parser.add_argument(
     "--summary_frequency",
     type=int,
-    default=100,
+    default=1000,
     metavar="N",
     help="how often to save summaries",
 )
 parser.add_argument(
-    "--aug_step",
+    "--dense_refeeding_steps",
     type=int,
     default=-1,
     metavar="N",
@@ -56,7 +57,7 @@ parser.add_argument(
     help="if present, decoder's last layer will not apply non-linearity function",
 )
 parser.add_argument(
-    "--num_epochs", type=int, default=50, metavar="N", help="maximum number of epochs"
+    "--num_epochs", type=int, default=12, metavar="N", help="maximum number of epochs"
 )
 parser.add_argument(
     "--save_every",
@@ -72,12 +73,27 @@ parser.add_argument(
     metavar="N",
     help="optimizer kind: adam, momentum, adagrad or rmsprop",
 )
+
 parser.add_argument(
-    "--hidden_layers",
+    "--layer1_dim",
     type=str,
-    default="1024,512,512,128",
+    default="256",
     metavar="N",
-    help="hidden layer sizes, comma-separated",
+    help="hidden layer 1 size",
+)
+parser.add_argument(
+    "--layer2_dim",
+    type=str,
+    default="32",
+    metavar="N",
+    help="hidden layer 2 size",
+)
+parser.add_argument(
+    "--layer3_dim",
+    type=str,
+    default="0",
+    metavar="N",
+    help="hidden layer 3 size",
 )
 parser.add_argument(
     "--gpu_ids",
@@ -89,14 +105,14 @@ parser.add_argument(
 parser.add_argument(
     "--path_to_train_data",
     type=str,
-    default="",
+    default="data/train",
     metavar="N",
     help="Path to training data",
 )
 parser.add_argument(
     "--path_to_eval_data",
     type=str,
-    default="",
+    default="data/valid",
     metavar="N",
     help="Path to evaluation data",
 )
@@ -110,7 +126,7 @@ parser.add_argument(
 parser.add_argument(
     "--logdir",
     type=str,
-    default="logs",
+    default="model_save",
     metavar="N",
     help="where to save model and write logs",
 )
@@ -181,30 +197,28 @@ def log_var_and_grad_summaries(
             )
 
 
-def set_optimizer(args, rencoder):
+def set_optimizer(optimizer, lr, weight_decay, rencoder):
     optimizers = {
-        "adam": optim.Adam(
-            rencoder.parameters(), lr=args.lr, weight_decay=args.weight_decay
-        ),
+        "adam": optim.Adam(rencoder.parameters(), lr=lr, weight_decay=weight_decay),
         "adagrad": optim.Adagrad(
-            rencoder.parameters(), lr=args.lr, weight_decay=args.weight_decay
+            rencoder.parameters(), lr=lr, weight_decay=weight_decay
         ),
         "momentum": optim.SGD(
             rencoder.parameters(),
-            lr=args.lr,
+            lr=lr,
             momentum=0.9,
-            weight_decay=args.weight_decay,
+            weight_decay=weight_decay,
         ),
         "rmsprop": optim.RMSprop(
             rencoder.parameters(),
-            lr=args.lr,
+            lr=lr,
             momentum=0.9,
-            weight_decay=args.weight_decay,
+            weight_decay=weight_decay,
         ),
     }
 
     try:
-        return optimizers[args.optimizer]
+        return optimizers[optimizer]
     except ValueError:
         raise ValueError("Unknown optimizer kind")
 
@@ -217,21 +231,22 @@ def main():
         entity="spaghetticode",
         config={
             "batch_size": args.batch_size,
-            "layer1_dim": args.hidden_layers.split(",")[0],
-            "layer2_dim": args.hidden_layers.split(",")[1],
-            "layer3_dim": args.hidden_layers.split(",")[2],
+            "layer1_dim": args.layer1_dim,
+            "layer2_dim": args.layer2_dim,
+            "layer3_dim": args.layer3_dim,
             "activation": args.non_linearity_type,
             "optimizer": args.optimizer,
-            "learning_rate": args.lr,
+            "learning_rate": args.learning_rate,
             "weight_decay": args.weight_decay,
             "noise_prob": args.noise_prob,
-            "dropout": args.drop_prob,
-            "dense_refeeding_steps": args.aug_step,
+            "dropout": args.dropout,
+            "dense_refeeding_steps": args.dense_refeeding_steps,
         },
     )
 
     params = dict()
-    params["batch_size"] = args.batch_size
+    # params["batch_size"] = args.batch_size
+    params["batch_size"] = int(wandb.config["batch_size"])
     params["data_dir"] = args.path_to_train_data
     params["major"] = "users"
     params["itemIdInd"] = 1
@@ -260,12 +275,21 @@ def main():
     else:
         print("Skipping eval data")
 
+    layer_sizes = (
+        [data_layer.vector_dim]
+        + [int(wandb.config["layer1_dim"])]
+        + [int(wandb.config["layer2_dim"])]
+    )
+
+    if (wandb.config["layer3_dim"]) != "0":
+        layer_sizes = layer_sizes + [int(wandb.config["layer3_dim"])]
+
     rencoder = model.AutoEncoder(
-        layer_sizes=[data_layer.vector_dim]
-        + [int(l_sizes) for l_sizes in args.hidden_layers.split(",")],
+        layer_sizes=layer_sizes,
         nl_type=args.non_linearity_type,
         is_constrained=args.constrained,
-        dp_drop_prob=args.drop_prob,
+        # dp_drop_prob=args.drop_prob,
+        dp_drop_prob=wandb.config["dropout"],
         last_layer_activations=not args.skip_last_layer_nl,
     )
     wandb.watch(rencoder)
@@ -291,7 +315,13 @@ def main():
     if use_gpu:
         rencoder = rencoder.cuda()
 
-    optimizer = set_optimizer(args, rencoder)
+    # optimizer = set_optimizer(args.optimizer, args.learning_rate, args.weight_decay, rencoder)
+    optimizer = set_optimizer(
+        args.optimizer,
+        wandb.config["learning_rate"],
+        wandb.config["weight_decay"],
+        rencoder,
+    )
     if args.optimizer == "momentum":
         scheduler = MultiStepLR(optimizer, milestones=[24, 36, 48, 66, 72], gamma=0.5)
 
@@ -300,9 +330,10 @@ def main():
     global_step = 0
 
     if args.noise_prob > 0.0:
-        dp = nn.Dropout(p=args.noise_prob)
+        # dp = nn.Dropout(p=args.noise_prob)
+        dp = nn.Dropout(p=wandb.config["noise_prob"])
 
-    for epoch in range(args.num_epochs):
+    for epoch in range(int(args.num_epochs)):
         print("Doing epoch {} of {}".format(epoch, args.num_epochs))
         e_start_time = time.time()
         rencoder.train()
@@ -325,6 +356,7 @@ def main():
             if i % args.summary_frequency == 0:
                 rmse = sqrt(t_loss / t_loss_denom)
                 # wandb.log({"train_RMSE": rmse})
+                print("t_loss_denom: ", t_loss_denom)
                 print("[%d, %5d] RMSE: %.7f" % (epoch, i, rmse))
                 logger.scalar_summary("Training_RMSE", rmse, global_step)
                 t_loss = 0
@@ -346,10 +378,10 @@ def main():
             total_epoch_loss += loss.item()
             denom += 1
 
-            # if args.aug_step > 0 and i % args.aug_step == 0 and i > 0:
-            if args.aug_step > 0:
+            # if args.dense_refeeding_steps > 0:
+            if wandb.config["dense_refeeding_steps"] > 0:
                 # Magic data augmentation trick happen here (dense refeeding)
-                for t in range(args.aug_step):
+                for t in range(wandb.config["dense_refeeding_steps"]):
                     inputs = Variable(outputs.data)
                     if args.noise_prob > 0.0:
                         inputs = dp(inputs)
@@ -366,6 +398,7 @@ def main():
 
         e_end_time = time.time()
         wandb.log({"train_RMSE": sqrt(total_epoch_loss / denom)})
+        print(" denom:", denom)
         print(
             "Total epoch {} finished in {} seconds with TRAINING RMSE loss: {}".format(
                 epoch, e_end_time - e_start_time, sqrt(total_epoch_loss / denom)
@@ -393,18 +426,6 @@ def main():
 
     print("Done")
     quit()
-
-    # # save to onnx
-    # dummy_input = Variable(
-    #     torch.randn(params["batch_size"], data_layer.vector_dim).type(torch.float)
-    # )
-    # torch.onnx.export(
-    #     rencoder.float(),
-    #     dummy_input.cuda() if use_gpu else dummy_input,
-    #     model_checkpoint + ".onnx",
-    #     verbose=True,
-    # )
-    # print("ONNX model saved to {}!".format(model_checkpoint + ".onnx"))
 
 
 if __name__ == "__main__":

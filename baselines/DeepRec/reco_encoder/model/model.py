@@ -1,4 +1,5 @@
 # Copyright (c) 2017 NVIDIA Corporation
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -74,7 +75,9 @@ class AutoEncoder(nn.Module):
             ]
         )
         for ind, w in enumerate(self.encode_w):
-            weight_init.xavier_uniform_(w)
+            weight_init.xavier_uniform_(w, 0.75)
+            print("ind:", ind, "size:", layer_sizes[ind])
+            # torch.nn.init.normal_(w, mean=0.0, std=1/np.sqrt(layer_sizes[ind]))
 
         self.encode_b = nn.ParameterList(
             [
@@ -96,7 +99,9 @@ class AutoEncoder(nn.Module):
                 ]
             )
             for ind, w in enumerate(self.decode_w):
-                weight_init.xavier_uniform(w)
+                weight_init.xavier_uniform(w, 0.75)
+                print("decode ind:", ind, "size:", layer_sizes[-ind - 1])
+                # torch.nn.init.normal_(w, mean=0.0, std=1 / np.sqrt(layer_sizes[-ind-1]))
         self.decode_b = nn.ParameterList(
             [
                 nn.Parameter(torch.zeros(reversed_enc_layers[i + 1]))
