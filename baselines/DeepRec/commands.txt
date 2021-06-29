@@ -20,3 +20,19 @@ python run.py --gpu_ids 0 --path_to_train_data data/train --hidden_layers 512,51
 python baselines/DeepRec/infer.py --path_to_train_data baselines/DeepRec/data/train --path_to_eval_data baselines/DeepRec/data/submission --hidden_layers 256,32,256 --non_linearity_type selu --save_path baselines/DeepRec/model_save/modelVal0.9845.epoch_48 --drop_prob 0.0 --predictions_path baselines/DeepRec/preds.csv
 
 # Wandb sweep
+
+# BayesianSVD++
+
+# install libfm first
+git clone https://github.com/srendle/libfm /home/libfm
+cd /home/libfm/
+make all
+export LIBFM_PATH=/home/libfm/bin/
+
+# convert train and test (submission) to libfm format from /home/libfm/scripts folder
+./triple_format_to_libfm.pl -in /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/train/CIL_data100.train,/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/CIL_data.submission -target 2 -separator "\t"
+
+# train libfm from /home/libfm/bin folder (Bayesian SVD++ w/o implicit user information)
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/train/CIL_data100.train.libfm -test /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/CIL_data.submission.libfm -dim 1,1,16 -iter 460 -verbosity 1 -out /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/libfmPrediction
+
+# (edit file paths and) run Libfm_submission_converter.py
