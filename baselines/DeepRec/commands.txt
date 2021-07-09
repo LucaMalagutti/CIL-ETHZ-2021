@@ -13,11 +13,8 @@ python baselines/DeepRec/data_utils/CIL_data_converter.py data/sample_submission
 cd baselines\DeepRec
 python run.py --layer1_dim 128 --layer2_dim 64 --layer3_dim 128 --batch_size 128 --dropout 0.1 --learning_rate 0.005 --weight_decay 0 --dense_refeeding_steps 1 --noise_prob 0.0 --num_epochs 50
 
-# Train w/o validation (from baselines/DeepRec/ folder)
-python run.py --gpu_ids 0 --path_to_train_data data/train --hidden_layers 512,512,1024 --non_linearity_type selu --batch_size 128 --logdir model_save --drop_prob 0.8 --optimizer momentum --lr 0.005 --weight_decay 0 --dense_refeeding_steps 1 --noise_prob 0 --num_epochs 12 --summary_frequency 1000
-
 # Generate predictions (from CIL-2021 folder)
-python baselines/DeepRec/infer.py --path_to_train_data baselines/DeepRec/data/train --path_to_eval_data baselines/DeepRec/data/submission --hidden_layers 256,32,256 --non_linearity_type selu --save_path baselines/DeepRec/model_save/modelVal0.9845.epoch_48 --drop_prob 0.0 --predictions_path baselines/DeepRec/preds.csv
+python baselines/DeepRec/infer.py --path_to_train_data baselines/DeepRec/data/train --path_to_eval_data baselines/DeepRec/data/submission --hidden_layers 256,32,256 --non_linearity_type selu --save_path baselines/DeepRec/model_save/modelVal0.9809.epoch_84 --drop_prob 0.0 --predictions_path baselines/DeepRec/preds.csv
 
 # Wandb sweep
 
@@ -36,3 +33,11 @@ export LIBFM_PATH=/home/libfm/bin/
 ./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/train/CIL_data100.train.libfm -test /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/CIL_data.submission.libfm -dim 1,1,16 -iter 460 -verbosity 1 -out /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/libfmPrediction
 
 # (edit file paths and) run Libfm_submission_converter.py
+
+
+--- BayesianSVD++ with deep features from DeepRec
+# extract deep features for every user (with 100% of training data processed through DeepRec trained on 90% of data)
+python baselines/DeepRec/infer_deepfeatures.py --path_to_train_data baselines/DeepRec/data/train100 --path_to_eval_data baselines/DeepRec/data/train100 --hidden_layers 256,32,256 --non_linearity_type selu --save_path baselines/DeepRec/model_save/modelVal0.9809.epoch_84 --drop_prob 0.0 --predictions_path baselines/DeepRec/deepfeatures.json
+
+
+

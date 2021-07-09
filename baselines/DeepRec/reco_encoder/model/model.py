@@ -49,6 +49,7 @@ class AutoEncoder(nn.Module):
         is_constrained=True,
         dp_drop_prob=0.0,
         last_layer_activations=True,
+        extract_deep_features=False,
     ):
         """
         Describes an AutoEncoder model
@@ -169,5 +170,20 @@ class AutoEncoder(nn.Module):
                 #  z = self.drop(z)
         return z
 
+    def encode_deepfeatures(self, z):
+        """
+        Applies the first layer after decode to generate deep features
+        """
+        for ind, w in enumerate(self.decode_w):
+            z = activation(
+                input=F.linear(input=z, weight=w, bias=self.decode_b[ind]),
+                # last layer or decoder should not apply non linearities
+                kind=self._nl_type
+            )
+            return z
+
     def forward(self, x):
-        return self.decode(self.encode(x))
+        if self.extract_deep_features:
+            return self.encode_deepfeatures(self.encode(x))
+        else:
+            return self.decode(self.encode(x))
