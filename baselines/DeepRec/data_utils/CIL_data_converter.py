@@ -40,10 +40,10 @@ def convert2CILdictionary(dictionary):
 
 def main(args):
     inpt = args[1]
-    out_prefix_train = "baselines/DeepRec/data/train/CIL_data"
+    out_prefix_train = "baselines/DeepRec/data/train90/CIL_data"
     out_prefix_valid = "baselines/DeepRec/data/valid/CIL_data"
     out_prefix_submission = "baselines/DeepRec/data/submission/CIL_data"
-    percent = 1.0  # 0.9 for 90%, 1.0 for 100% train and no validation
+    percent = 0.9  # 0.9 for 90%, 1.0 for 100% train and no validation
     data = dict()
 
     total_rating_count = 0

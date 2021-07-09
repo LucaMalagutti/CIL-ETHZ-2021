@@ -153,12 +153,12 @@ def main():
             # new user: save deep features in the dictionary
             user_deepfeatures_dict[user_idx] = []
             for ind in range(32):   # 32 deep features
-                user_deepfeatures_dict[user_idx].append(deep_features[ind])
+                user_deepfeatures_dict[user_idx].append(str(deep_features[ind]))
 
             if i % 1000 == 0:
-                print("Done: {} users".format(i))
+                print("Extracted deep features for {} users".format(i))
 
-    print("Saving deep feature dictionary to:", args.predictions_path)
+    print("Saving deep feature dictionary..")
     with open(args.predictions_path, "w") as outf:
         json.dump(user_deepfeatures_dict, outf)
 

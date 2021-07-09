@@ -109,6 +109,7 @@ class AutoEncoder(nn.Module):
                 for i in range(len(reversed_enc_layers) - 1)
             ]
         )
+        self._extract_deep_features = extract_deep_features
 
         print("******************************")
         print("******************************")
@@ -183,7 +184,7 @@ class AutoEncoder(nn.Module):
             return z
 
     def forward(self, x):
-        if self.extract_deep_features:
+        if self._extract_deep_features:
             return self.encode_deepfeatures(self.encode(x))
         else:
             return self.decode(self.encode(x))

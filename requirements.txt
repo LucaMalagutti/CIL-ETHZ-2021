@@ -102,4 +102,3 @@ entrypoints~=0.3
 pyparsing~=2.4.7
 pycparser~=2.20
 qtconsole~=5.1.0
-pywFM~=0.9.0
