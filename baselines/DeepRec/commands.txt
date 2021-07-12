@@ -40,11 +40,13 @@ export LIBFM_PATH=/home/libfm/bin/
 python baselines/DeepRec/infer_deepfeatures.py --path_to_train_data baselines/DeepRec/data/train100 --path_to_eval_data baselines/DeepRec/data/train100 --hidden_layers 128,32,128 --non_linearity_type selu --save_path baselines/DeepRec/model_save/modelVal0.9809.epoch_84 --drop_prob 0.0 --predictions_path baselines/DeepRec/deepfeatures.json
 
 # run Append_deepfeatures.py to append deepfeatures to training,validation and submission files
-python baselines/BayesianSVD/Append_deepfeatures.py
+python baselines/BayesianSVD/Append_deepfeatures_libfm.py
 
-# convert augmented train and test (submission) to libfm format from /home/libfm/scripts folder
-cd /home/libfm/scripts
-./triple_format_to_libfm.pl -in /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_data90aug.train,/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_data100aug.train,/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_dataaug.valid,/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_dataaug.submission -target 2 -separator "\t"
+# train on 90% libfm from /home/libfm/bin folder (Bayesian SVD++ w/ deep features and w/o implicit user information, inner dim 32)
+cd /home/libfm/bin
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_data90aug.train.libfm -test /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_dataaug.valid.libfm -dim 1,1,64 -iter 460 -verbosity 1
 
+# train on 100% and generate submission
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_data100aug.train.libfm -test /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/deepfeatures/CIL_dataaug.submission.libfm -dim 1,1,32 -iter 460 -verbosity 1 -out /home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/libfm_deepf_inndim32_pred
 
-
+# (edit file paths and) run Libfm_submission_converter.py

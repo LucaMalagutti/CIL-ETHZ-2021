@@ -1,6 +1,6 @@
-pred_file = "BayesianSVDpp_predictions.csv"
+pred_file = "BayesianSVDpp_predictions.csv"     # this will be generated
 samplesub_file = "/home/ico/PycharmProjects/CIL-2021/data/sample_submission.csv"
-libfm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/libfmPrediction"
+libfm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/libfm_deepf_inndim32_pred"
 
 with open(libfm_file) as predf:
     with open(pred_file, "w") as outf:
