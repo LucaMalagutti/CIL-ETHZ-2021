@@ -138,3 +138,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#NNMF
+baselines/NNMF/logs
+baselines/NNMF/results
+baselines/NNMF/models
+baselines/NNMF/config
