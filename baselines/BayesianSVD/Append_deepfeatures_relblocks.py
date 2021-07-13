@@ -123,7 +123,7 @@ with open(deepf_json) as deepf_file:
             with open(in_file) as inf:
                 for in_line in inf.readlines():
                     split_line = in_line.split("\t")
-                    rating = split_line[2]
+                    rating = split_line[2][:-1]
 
                     outf.write(rating + "\n")
 
