@@ -105,7 +105,7 @@ parser.add_argument(
 parser.add_argument(
     "--path_to_train_data",
     type=str,
-    default="data/train",
+    default="data/train90",
     metavar="N",
     help="Path to training data",
 )

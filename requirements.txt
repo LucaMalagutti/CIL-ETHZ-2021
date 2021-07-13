@@ -26,7 +26,7 @@ lxml==4.6.3
 mccabe==0.6.1
 mypy-extensions==0.4.3
 nodeenv==1.6.0
-numpy==1.17.2
+numpy~=1.19.5
 nvidia-ml-py3==7.352.0
 pandas==0.25.1
 pathspec==0.8.1
@@ -102,3 +102,5 @@ entrypoints~=0.3
 pyparsing~=2.4.7
 pycparser~=2.20
 qtconsole~=5.1.0
+tensorflow~=2.5.0
+wandb~=0.10.33
