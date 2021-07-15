@@ -1,0 +1,7 @@
+Epoch 1, train loss 2.4359, test rmse 1.094927
+Epoch 1, train loss 1.3849, test rmse 1.012334
+Epoch 2, train loss 1.1566, test rmse 1.018601
+Epoch 3, train loss 1.0959, test rmse 1.011425
+Epoch 4, train loss 1.0667, test rmse 1.026366
+Epoch 5, train loss 1.0589, test rmse 1.017431
+Epoch 1, train loss 1.5631, test rmse 1.051919
