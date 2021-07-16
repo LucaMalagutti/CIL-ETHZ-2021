@@ -157,3 +157,5 @@ DeepRec++/data/embs/
 baselines/DeepRec/data/submission/CIL_data.submission
 DeepRec++/data/submission/CIL_data.submission
 DeepRec++/sweep.yaml
+DeepRec++/out.json
+DeepRec++/data/embs.zip

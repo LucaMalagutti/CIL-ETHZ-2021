@@ -50,7 +50,6 @@ class AutoEncoder(nn.Module):
         dp_drop_prob=0.0,
         last_layer_activations=True,
         extract_deep_features=False,
-        extract_embeddings=False,
     ):
         """
         Describes an AutoEncoder model
@@ -111,7 +110,6 @@ class AutoEncoder(nn.Module):
             ]
         )
         self._extract_deep_features = extract_deep_features
-        self._extract_embeddings = extract_embeddings
 
         print("******************************")
         print("******************************")
@@ -185,11 +183,12 @@ class AutoEncoder(nn.Module):
             )
             return z
 
+    def extract_embeddings(self, x):
+        return self.encode(x)
+
     def forward(self, x):
         if self._extract_deep_features:
             return self.encode_deepfeatures(self.encode(x))
-        elif self._extract_embeddings:
-            return self.encode(x)
         else:
             return self.decode(self.encode(x))
 
