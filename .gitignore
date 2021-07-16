@@ -144,3 +144,16 @@ baselines/NNMF/logs
 baselines/NNMF/results
 baselines/NNMF/models
 baselines/NNMF/config
+
+#DeepRec++
+baselines/DeepRec/data/submission/CIL_data.submission
+baselines/DeepRec/data/train90/CIL_data.train
+baselines/DeepRec/data/valid/CIL_data.valid
+DeepRec++/data/train100/CIL_data100.train
+DeepRec++/data/train90/CIL_data90.train
+DeepRec++/data/valid/CIL_data10.valid
+DeepRec++/model_save/
+DeepRec++/data/embs/
+baselines/DeepRec/data/submission/CIL_data.submission
+DeepRec++/data/submission/CIL_data.submission
+DeepRec++/sweep.yaml
