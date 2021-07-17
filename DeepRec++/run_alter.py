@@ -412,6 +412,7 @@ def main():
 
                 user_vectors = user_vectors.cuda() if use_gpu else user_vectors
                 item_vectors = item_vectors.cuda() if use_gpu else item_vectors
+                ratings = ratings.cuda() if use_gpu else ratings
 
                 user_outputs = users_encoder(user_vectors.float())
                 item_outputs = items_encoder(item_vectors.float())
