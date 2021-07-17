@@ -124,10 +124,10 @@ def main():
         },
     )
 
-    if not os.path.exists(args.logdir):
-        os.mkdir(args.logdir)
     if not os.path.exists("model_save/"):
         os.mkdir("model_save/")
+    if not os.path.exists(args.logdir):
+        os.mkdir(args.logdir)
 
     layer_sizes_items = [10000, 2048, 512, 512]
     layer_sizes_users = [1000, 512, 32, 64]
@@ -266,6 +266,7 @@ def main():
 
             user_vectors = user_vectors.cuda() if use_gpu else user_vectors
             item_vectors = item_vectors.cuda() if use_gpu else item_vectors
+            ratings = ratings.cuda() if use_gpu else ratings
 
             users_optimizer.zero_grad()
             items_optimizer.zero_grad()
