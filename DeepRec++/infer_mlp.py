@@ -6,10 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from data_utils.CIL_data_converter import convert2CILdictionary
-from reco_encoder.data import input_layer
+from datasets import EmbeddingDataset
 from reco_encoder.model import model
-from run_mlp import EmbeddingDataset
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from tqdm import tqdm

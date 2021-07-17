@@ -346,7 +346,7 @@ def main():
         # dp = nn.Dropout(p=args.noise_prob)
         dp = nn.Dropout(p=wandb.config["noise_prob"])
 
-    for epoch in range(int(args.num_epochs)):
+    for epoch in range(1, int(args.num_epochs) + 1):
         print("Doing epoch {} of {}".format(epoch, args.num_epochs))
         e_start_time = time.time()
         rencoder.train()

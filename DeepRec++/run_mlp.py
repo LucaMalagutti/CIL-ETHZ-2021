@@ -7,6 +7,7 @@ import numpy as np
 import pandas
 import torch
 import wandb
+from datasets import EmbeddingDataset
 from reco_encoder.model import model
 from torch import nn, optim
 from torch.utils.data import DataLoader
@@ -102,43 +103,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-class EmbeddingDataset(torch.utils.data.Dataset):
-    def __init__(self, path_to_user_embs, path_to_item_embs, path_to_train_data):
-        super().__init__()
-        self._delimiter = "\t"
-
-        with open(path_to_user_embs, "rb") as f:
-            user_embs = pickle.load(f)
-        with open(path_to_item_embs, "rb") as f:
-            item_embs = pickle.load(f)
-
-        self.data = []
-        self.ratings = []
-        with open(path_to_train_data, "r") as src:
-            for line in src.readlines():
-                parts = line.strip().split(self._delimiter)
-                if len(parts) < 3:
-                    raise ValueError(
-                        "Encountered badly formatted line in {}".format(
-                            path_to_train_data
-                        )
-                    )
-                self.data.append(
-                    np.array(
-                        user_embs[int(parts[0])] + item_embs[int(parts[1])],
-                        dtype=np.float32,
-                    )
-                )
-                self.ratings.append(float(parts[2]))
-        self.ratings = np.array(self.ratings, dtype=np.float32)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return self.data[idx], self.ratings[idx]
-
-
 def main():
 
     args.layer_sizes = [int(size) for size in args.layer_sizes.split(",")]
@@ -166,11 +130,17 @@ def main():
     criterion = model.RMSELoss()
 
     train_dataset = EmbeddingDataset(
-        args.path_to_user_embs, args.path_to_item_embs, args.path_to_train_data
+        args.path_to_user_embs,
+        args.path_to_item_embs,
+        args.path_to_train_data,
+        shuffle=True,
     )
     train_dataloader = DataLoader(train_dataset, batch_size=512)
     val_dataset = EmbeddingDataset(
-        args.path_to_user_embs, args.path_to_item_embs, args.path_to_eval_data
+        args.path_to_user_embs,
+        args.path_to_item_embs,
+        args.path_to_eval_data,
+        shuffle=True,
     )
     val_dataloader = DataLoader(val_dataset, batch_size=512)
 
@@ -191,7 +161,7 @@ def main():
 
         print(f"Train Loss: {train_loss}")
 
-        wandb.log({"mlp_train_RMSE": train_loss})
+        wandb.log({"mlp_train_RMSE": train_loss}, step=i)
 
         if i % args.save_every == 0:
             mlp.eval()
@@ -205,7 +175,7 @@ def main():
             eval_loss = eval_loss / len(val_dataloader)
 
             print(f"Eval Loss: {eval_loss}")
-            wandb.log({"mlp_val_RMSE": eval_loss})
+            wandb.log({"mlp_val_RMSE": eval_loss}, step=i)
 
             torch.save(mlp.state_dict(), args.logdir + "mlp@epoch_" + str(i))
 

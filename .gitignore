@@ -8,6 +8,7 @@ baselines/.DS_STORE
 checkpoints/
 submissions/
 wandb/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
