@@ -5,12 +5,12 @@ from math import sqrt
 
 import numpy as np
 import pandas as pd
-import run
 import torch
 import wandb
 from datasets import RatingDataset
 from reco_encoder.model import model
-from run import set_optimizer
+
+# from run import set_optimizer
 from torch import nn, optim
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
@@ -52,7 +52,7 @@ parser.add_argument(
 parser.add_argument(
     "--pretrain_num_epochs",
     type=int,
-    default=10,
+    default=3,
     help="maximum number of epochs",
 )
 parser.add_argument(
@@ -112,6 +112,32 @@ parser.add_argument(
 
 args = parser.parse_args()
 args.layer_sizes = [int(x) for x in args.layer_sizes.split(",")]
+
+
+def set_optimizer(optimizer, lr, weight_decay, rencoder):
+    optimizers = {
+        "adam": optim.Adam(rencoder.parameters(), lr=lr, weight_decay=weight_decay),
+        "adagrad": optim.Adagrad(
+            rencoder.parameters(), lr=lr, weight_decay=weight_decay
+        ),
+        "momentum": optim.SGD(
+            rencoder.parameters(),
+            lr=lr,
+            momentum=0.9,
+            weight_decay=weight_decay,
+        ),
+        "rmsprop": optim.RMSprop(
+            rencoder.parameters(),
+            lr=lr,
+            momentum=0.9,
+            weight_decay=weight_decay,
+        ),
+    }
+
+    try:
+        return optimizers[optimizer]
+    except ValueError:
+        raise ValueError("Unknown optimizer kind")
 
 
 def main():
@@ -244,11 +270,18 @@ def main():
 
     train_dataset = RatingDataset(args.path_to_train_data)
     train_dataloader = DataLoader(
-        train_dataset, batch_size=encoder_batch_size, shuffle=True
+        train_dataset,
+        batch_size=encoder_batch_size,
+        shuffle=True,
+        drop_last=True,
     )
 
     eval_dataset = RatingDataset(args.path_to_eval_data)
-    eval_dataloader = DataLoader(eval_dataset, batch_size=encoder_batch_size)
+    eval_dataloader = DataLoader(
+        eval_dataset,
+        batch_size=encoder_batch_size,
+        drop_last=True,
+    )
 
     for epoch_i in range(1, args.num_epochs + 1):
         user_tot_epoch_loss = 0
