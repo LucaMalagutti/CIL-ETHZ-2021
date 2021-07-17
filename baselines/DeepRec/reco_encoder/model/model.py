@@ -50,6 +50,7 @@ class AutoEncoder(nn.Module):
         dp_drop_prob=0.0,
         last_layer_activations=True,
         extract_deep_features=False,
+        deepf_layer="second_bottleneck",
     ):
         """
         Describes an AutoEncoder model
@@ -110,6 +111,7 @@ class AutoEncoder(nn.Module):
             ]
         )
         self._extract_deep_features = extract_deep_features
+        self._deepf_layer = deepf_layer
 
         print("******************************")
         print("******************************")
@@ -171,20 +173,39 @@ class AutoEncoder(nn.Module):
                 #  z = self.drop(z)
         return z
 
-    def encode_deepfeatures(self, z):
+    def encode_deepfeatures_2nd(self, x):
         """
-        Applies the first layer after decode to generate deep features
+        Applies the encoder and the first layer after decode to generate deep features of the 2nd bottleneck
         """
+        z = self.encode(x)
         for ind, w in enumerate(self.decode_w):
             z = activation(
                 input=F.linear(input=z, weight=w, bias=self.decode_b[ind]),
                 # last layer or decoder should not apply non linearities
                 kind=self._nl_type
             )
+            # returns immediately
             return z
+
+    def encode_deepfeatures_1st(self, x):
+        """
+        Applies the encoder until the 1st bottleneck
+        """
+        for ind, w in enumerate(self.encode_w):
+            x = activation(
+                input=F.linear(input=x, weight=w, bias=self.encode_b[ind]),
+                kind=self._nl_type,
+            )
+            # ind == 0 is the first layer, ind == 0 is the 2nd layer which is the 1st bottleneck
+            if ind == 1:
+                return x
+
 
     def forward(self, x):
         if self._extract_deep_features:
-            return self.encode_deepfeatures(self.encode(x))
+            if self._deepf_layer == "second_bottleneck":
+                return self.encode_deepfeatures_2nd(x)
+            elif self._deepf_layer == "first_bottleneck":
+                return self.encode_deepfeatures_1st(x)
         else:
             return self.decode(self.encode(x))

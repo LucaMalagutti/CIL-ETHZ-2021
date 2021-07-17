@@ -16,8 +16,9 @@ export LIBFM_PATH=/home/libfm/bin/
 
 
 --- BayesianSVD++ with deep features from DeepRec
-# extract deep features for every user (with 100% of training data processed through DeepRec trained on 90% of data)
-python baselines/DeepRec/infer_deepfeatures.py --path_to_train_data baselines/DeepRec/data/train100 --path_to_eval_data baselines/DeepRec/data/train100 --hidden_layers 128,32,128 --non_linearity_type selu --save_path baselines/DeepRec/model_save/modelVal0.9809.epoch_84 --drop_prob 0.0 --predictions_path baselines/DeepRec/deepfeatures.json
+# extract deep features for every user (with 90% of training data processed through DeepRec trained on 90% of data)
+# change "first_bottleneck" to "second_bottleneck" to extract features from the second bottleneck of DeepRec
+python baselines/DeepRec/infer_deepfeatures.py --path_to_train_data baselines/DeepRec/data/train100 --path_to_eval_data baselines/DeepRec/data/train100 --hidden_layers 128,32,128 --non_linearity_type selu --save_path baselines/DeepRec/model_save/modelVal0.9809.epoch_84 --drop_prob 0.0 --predictions_path baselines/DeepRec/deepfeatures100_1stBottleneck.json
 
 # run Append_deepfeatures.py to append deepfeatures to training,validation and submission files
 python baselines/BayesianSVD/Append_deepfeatures_libfm.py
@@ -109,5 +110,111 @@ cd /home/libfm/bin
 
 # train on 100% data and generate submission
 ./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/y/CIL_data100aug.train.libfmy.train -test /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/y/CIL_dataaug.submission.libfmy.test -dim 1,1,32 -iter 460 -verbosity 1 --relation /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/CIL_data100aug.rel_user,/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/CIL_data100aug.rel_item -out /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/submission/BS_bags_preds -init_stdev 0.1
+
+# (edit file paths and) run Libfm_submission_converter.py
+
+--- Relational Block Structure Extension w/ deepfeatures w/ bagofitems and bagofusers
+# generate files
+python Append_deepf_bags.py
+
+# convert to binary format
+cd /home/libfm/
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/totrash.y
+
+# generate transposed matrices
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data90aug.train.libfmrel_item.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_data100aug.train.libfmrel_item.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.valid.libfmrel_item.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/CIL_dataaug.submission.libfmrel_item.xt
+
+# delete all .libfm files in /deepf_bags/ (as they are already converted to .x and .xt files)
+# delete totrash.y
+# delete all files *.valid.*.x , *.valid.*.xt , *.valid.*.groups, *.submission.*.x , *.submission.*.xt , *.submission.*.groups (KEEP .test files)
+# move data90aug and dataaug.valid files to /deepf_bags/Train90Val10
+# move data100aug and dataaug.submission files to /deepf_bags/Train100Submission
+# in both /Train90Val10 and /Train100Submission move *y.train and *y.test files to ./y
+# in /Train90Val10 rename all files *item.* as CIL_data90aug.rel_item.* (keep the file extension)
+# in /Train90Val10 rename all files *user.* as CIL_data90aug.rel_user.* (keep the file extension)
+# ensure that there are 10 files in /Train90Val10
+# in /Train100Submission rename all files *item.* as CIL_data100aug.rel_item.* (keep the file extension)
+# in /Train100Submission rename all files *user.* as CIL_data100aug.rel_user.* (keep the file extension)
+# ensure that there are 10 files in /Train100Submission
+
+# train on 90% data and test on 10%
+cd /home/libfm/bin
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train90Val10/y/CIL_data90aug.train.libfmy.train -test /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train90Val10/y/CIL_dataaug.valid.libfmy.test -dim 1,1,24 -iter 460 -verbosity 1 --relation /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train90Val10/CIL_data90aug.rel_user,/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train90Val10/CIL_data90aug.rel_item --meta /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train90Val10/CIL_data90aug.rel_user.groups
+
+# train on 100% data and generate submission
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train100Submission/y/CIL_data100aug.train.libfmy.train -test /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train100Submission/y/CIL_dataaug.submission.libfmy.test -dim 1,1,32 -iter 460 -verbosity 1 --relation /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train100Submission/CIL_data100aug.rel_user,/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf_bags/Train100Submission/CIL_data100aug.rel_item -out /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/submission/BS_bags_preds -init_stdev 0.1
+
+# (edit file paths and) run Libfm_submission_converter.py
+
+
+--- Relational Block Structure Extension w/ deepfeatures 1st bottleneck w/ bagofitems and bagofusers
+# change deepf90_json and deepf_json files to 1st bottleneck jsons
+# generate files
+python Append_deepf_bags.py
+
+# convert to binary format
+cd /home/libfm/
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_user.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_user.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+./bin/convert -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_item.libfm -ofilex /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_item.x -ofiley /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/totrash.y
+
+# generate transposed matrices
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data90aug.train.libfmrel_item.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_data100aug.train.libfmrel_item.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.valid.libfmrel_item.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_user.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_user.xt
+./bin/transpose -ifile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_item.x -ofile /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/CIL_dataaug.submission.libfmrel_item.xt
+
+# delete all .libfm files in /deepf1stb_bags/ (as they are already converted to .x and .xt files)
+# delete totrash.y
+# delete all files *.valid.*.x , *.valid.*.xt , *.valid.*.groups, *.submission.*.x , *.submission.*.xt , *.submission.*.groups (KEEP .test files)
+# move data90aug and dataaug.valid files to /deepf1stb_bags/Train90Val10
+# move data100aug and dataaug.submission files to /deepf1stb_bags/Train100Submission
+# in both /Train90Val10 and /Train100Submission move *y.train and *y.test files to ./y
+# in /Train90Val10 rename all files *item.* as CIL_data90aug.rel_item.* (keep the file extension)
+# in /Train90Val10 rename all files *user.* as CIL_data90aug.rel_user.* (keep the file extension)
+# ensure that there are 10 files in /Train90Val10
+# in /Train100Submission rename all files *item.* as CIL_data100aug.rel_item.* (keep the file extension)
+# in /Train100Submission rename all files *user.* as CIL_data100aug.rel_user.* (keep the file extension)
+# ensure that there are 10 files in /Train100Submission
+
+# train on 90% data and test on 10%
+cd /home/libfm/bin
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train90Val10/y/CIL_data90aug.train.libfmy.train -test /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train90Val10/y/CIL_dataaug.valid.libfmy.test -dim 1,1,16 -iter 460 -verbosity 1 --relation /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train90Val10/CIL_data90aug.rel_user,/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train90Val10/CIL_data90aug.rel_item --meta /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train90Val10/CIL_data90aug.rel_user.groups
+
+# train on 100% data and generate submission
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train100Submission/y/CIL_data100aug.train.libfmy.train -test /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train100Submission/y/CIL_dataaug.submission.libfmy.test -dim 1,1,32 -iter 460 -verbosity 1 --relation /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train100Submission/CIL_data100aug.rel_user,/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/deepf1stb_bags/Train100Submission/CIL_data100aug.rel_item -out /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/submission/BS_bags_preds -init_stdev 0.1
+
+# (edit file paths and) run Libfm_submission_converter.py
+
+--- BayesianSVDpp w/bags and Simulated Annealing
+# train on 90% data and test on 10%
+cd ~/Downloads/BayesianSVD_SA/libfm/bin
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train90Val10/y/CIL_data90aug.train.libfmy.train -test /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train90Val10/y/CIL_dataaug.valid.libfmy.test -dim 1,1,32 -iter 460 -verbosity 1 --relation /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train90Val10/CIL_data90aug.rel_user,/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train90Val10/CIL_data90aug.rel_item -T_init 1.5 -T_min 1.0 -alpha_sa 0.9
+
+# train on 100% data and generate submission
+./libFM -task r -train /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/y/CIL_data100aug.train.libfmy.train -test /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/y/CIL_dataaug.submission.libfmy.test -dim 1,1,32 -iter 460 -verbosity 1 --relation /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/CIL_data100aug.rel_user,/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bagofitemsusers/Train100Submission/CIL_data100aug.rel_item -out /home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/submission/BS_bags_SA_preds -init_stdev 0.1 -T_init 1.5 -T_min 1.0 -alpha_sa 0.8
 
 # (edit file paths and) run Libfm_submission_converter.py
