@@ -1,6 +1,6 @@
-pred_file = "BS_bags_SA_preds.csv"     # this will be generated
+pred_file = "BS_bags_inndim16_600it_preds.csv"     # this will be generated, output: change this
 samplesub_file = "/home/ico/PycharmProjects/CIL-2021/data/sample_submission.csv"
-libfm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/submission/BS_bags_SA_preds"
+libfm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/submission/BS_bags_inndim16_600it_preds"  # input: change this
 
 with open(libfm_file) as predf:
     with open(pred_file, "w") as outf:

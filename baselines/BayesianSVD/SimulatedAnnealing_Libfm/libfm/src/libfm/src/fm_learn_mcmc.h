@@ -655,6 +655,7 @@ void fm_learn_mcmc::draw_w0(double& w0, double& reg, Data& train, double T) {
   w0_sigma_sqr_old = (double) 1.0 / (reg + alpha * train.num_cases);
   w0_sigma_sqr = T * w0_sigma_sqr_old;
   w0_mean = - w0_sigma_sqr_old * (alpha * w0_mean - w0_mean_0 * reg);
+  // w0_mean = - w0_sigma_sqr * (alpha * w0_mean - w0_mean_0 * reg);
   // update w0
   double w0_old = w0;
 
@@ -698,6 +699,7 @@ void fm_learn_mcmc::draw_w(double& w, double& w_mu, double& w_lambda, sparse_row
   w_sigma_sqr_old = (double) 1.0 / (w_lambda + alpha * w_sigma_sqr);
   w_sigma_sqr = T * w_sigma_sqr_old;
   w_mean = - w_sigma_sqr_old * (alpha * w_mean - w_mu * w_lambda);
+  // w_mean = - w_sigma_sqr * (alpha * w_mean - w_mu * w_lambda);
 
   // update w:
   double w_old = w;
@@ -757,6 +759,7 @@ void fm_learn_mcmc::draw_w_rel(double& w, double& w_mu, double& w_lambda, sparse
   w_sigma_sqr_old = (double) 1.0 / (w_lambda + alpha * w_sigma_sqr);
   w_sigma_sqr = T * w_sigma_sqr_old;
   w_mean = - w_sigma_sqr_old * (alpha * w_mean - w_mu * w_lambda);
+  // w_mean = - w_sigma_sqr * (alpha * w_mean - w_mu * w_lambda);
 
   // update w:
   double w_old = w;
@@ -814,6 +817,7 @@ void fm_learn_mcmc::draw_v(double& v, double& v_mu, double& v_lambda, sparse_row
   v_sigma_sqr_old = (double) 1.0 / (v_lambda + alpha * v_sigma_sqr);
   v_sigma_sqr = T * v_sigma_sqr_old;
   v_mean = - v_sigma_sqr_old * (alpha * v_mean - v_mu * v_lambda);
+  // v_mean = - v_sigma_sqr * (alpha * v_mean - v_mu * v_lambda);
 
   // update v:
   double v_old = v;
@@ -877,6 +881,7 @@ void fm_learn_mcmc::draw_v_rel(double& v, double& v_mu, double& v_lambda, sparse
   v_sigma_sqr_old = (double) 1.0 / (v_lambda + alpha * v_sigma_sqr);
   v_sigma_sqr = T * v_sigma_sqr_old;
   v_mean = - v_sigma_sqr_old * (alpha * v_mean - v_mu * v_lambda);
+  // v_mean = - v_sigma_sqr * (alpha * v_mean - v_mu * v_lambda);
 
   // update v:
   double v_old = v;

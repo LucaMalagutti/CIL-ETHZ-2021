@@ -98,7 +98,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
     double iteration_time4 = getusertime4();
     nan_cntr_w0 = 0; inf_cntr_w0 = 0; nan_cntr_w = 0; inf_cntr_w = 0; nan_cntr_v = 0; inf_cntr_v = 0; nan_cntr_alpha = 0; inf_cntr_alpha = 0; nan_cntr_w_mu = 0; inf_cntr_w_mu = 0; nan_cntr_w_lambda = 0; inf_cntr_w_lambda = 0; nan_cntr_v_mu = 0; inf_cntr_v_mu = 0; nan_cntr_v_lambda = 0; inf_cntr_v_lambda = 0;
 
-    std::cout << "T_min:" << T_min << " alpha_sa:" << alpha_sa << " T:" << T << std::endl;
+    std::cout << "T_init:" << fm->T_init << " T_min:" << T_min << " alpha_sa:" << alpha_sa << " T:" << T << std::endl;
     draw_all(train, T);
     // decrease SA temperature
     
@@ -145,7 +145,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
         p = std::min(max_target, p);
         p = std::max(min_target, p);
         pred_sum_all(c) += p;
-        if (i >= 5) {
+        if (i >= 50) {
           pred_sum_all_but5(c) += p;
         }
       }
@@ -168,7 +168,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
         p = cdf_gaussian(p);
         pred_this(c) = p;
         pred_sum_all(c) += p;
-        if (i >= 5) {
+        if (i >= 50) {
           pred_sum_all_but5(c) += p;
         }
       }
@@ -227,9 +227,9 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
       double rmse_test_this, mae_test_this, rmse_test_all, mae_test_all, rmse_test_all_but5, mae_test_all_but5;
        _evaluate(pred_this, test.target, 1.0, rmse_test_this, mae_test_this, num_eval_cases);
        _evaluate(pred_sum_all, test.target, 1.0/(i+1), rmse_test_all, mae_test_all, num_eval_cases);
-       _evaluate(pred_sum_all_but5, test.target, 1.0/(i-5+1), rmse_test_all_but5, mae_test_all_but5, num_eval_cases);
+       _evaluate(pred_sum_all_but5, test.target, 1.0/(i-50+1), rmse_test_all_but5, mae_test_all_but5, num_eval_cases);
 
-      std::cout << "#Iter=" << std::setw(3) << i << "\tTrain=" << rmse_train << "\tTest=" << rmse_test_all << std::endl;
+      std::cout << "#Iter=" << std::setw(3) << i << "\tTrain=" << rmse_train << "\tTest=" << rmse_test_all << "\tTestAllBut50=" << rmse_test_all_but5 << std::endl;
 
       if (log != NULL) {
         log->log("rmse", rmse_test_all);
@@ -252,7 +252,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
         ll_test_this, ll_test_all, ll_test_all_but5;
        _evaluate_class(pred_this, test.target, 1.0, acc_test_this, ll_test_this, num_eval_cases);
        _evaluate_class(pred_sum_all, test.target, 1.0/(i+1), acc_test_all, ll_test_all, num_eval_cases);
-       _evaluate_class(pred_sum_all_but5, test.target, 1.0/(i-5+1), acc_test_all_but5, ll_test_all_but5, num_eval_cases);
+       _evaluate_class(pred_sum_all_but5, test.target, 1.0/(i-50+1), acc_test_all_but5, ll_test_all_but5, num_eval_cases);
 
       std::cout << "#Iter=" << std::setw(3) << i << "\tTrain=" << acc_train << "\tTest=" << acc_test_all << "\tTest(ll)=" << ll_test_all << std::endl;
 
