@@ -52,7 +52,7 @@ parser.add_argument(
 parser.add_argument(
     "--pretrain_num_epochs",
     type=int,
-    default=1,
+    default=10,
     help="maximum number of epochs",
 )
 parser.add_argument(
@@ -106,7 +106,7 @@ parser.add_argument(
 parser.add_argument(
     "--logdir",
     type=str,
-    default="model_save/mlp/",
+    default="model_save/alternate/",
     help="where to save model and write logs",
 )
 
@@ -120,9 +120,14 @@ def main():
         entity="spaghetticode",
         config={
             "mlp_learning_rate": args.learning_rate,
-            # TODO all all hyperparameters
+            # TODO add all hyperparameters
         },
     )
+
+    if not os.path.exists(args.logdir):
+        os.mkdir(args.logdir)
+    if not os.path.exists("model_save/"):
+        os.mkdir("model_save/")
 
     layer_sizes_items = [10000, 2048, 512, 512]
     layer_sizes_users = [1000, 512, 32, 64]
@@ -193,7 +198,7 @@ def main():
         dp_drop_prob=dp_users,
     )
 
-    if not args.pretrain_autoencoders:
+    if args.pretrain_autoencoders:
         print("Loading model from: {}".format(model_checkpoint_items))
         items_encoder.load_state_dict(torch.load(model_checkpoint_items))
 
@@ -421,6 +426,16 @@ def main():
                     "eval_mlp_loss": eval_mlp_loss,
                 },
                 step=epoch_i,
+            )
+
+            torch.save(mlp.state_dict(), args.logdir + "mlp_epoch_" + str(epoch_i))
+            torch.save(
+                users_encoder.state_dict(),
+                args.logdir + "users_encoder_epoch_" + str(epoch_i),
+            )
+            torch.save(
+                items_encoder.state_dict(),
+                args.logdir + "items_encoder_epoch_" + str(epoch_i),
             )
 
 
