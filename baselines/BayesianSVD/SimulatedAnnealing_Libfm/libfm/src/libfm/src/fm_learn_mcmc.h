@@ -102,7 +102,7 @@ class fm_learn_mcmc : public fm_learn {
   // add the q(f)-terms to the main relation q-cache (using only the transpose data)
   void add_main_q(Data& train, uint f);
 
-  void draw_all(Data& train, double T);
+  void draw_all(Data& train, double T, int i);
 
   // Sample the model parameters w0, w, v. The samplers for w and v have an
   // additional function for relational data.
@@ -428,10 +428,14 @@ void fm_learn_mcmc::add_main_q(Data& train, uint f) {
   }
 }
 
-void fm_learn_mcmc::draw_all(Data& train, double T) {
+void fm_learn_mcmc::draw_all(Data& train, double T, int i) {
   std::ostringstream ss;
 
-  draw_alpha(alpha, train.num_cases);
+  if (i == 0){
+      alpha = 1.17507;
+  } else {
+      draw_alpha(alpha, train.num_cases);
+  }
   if (log != NULL) {
     log->log("alpha", alpha);
   }
@@ -1120,12 +1124,12 @@ void fm_learn_mcmc::init() {
   empty_data_row.size = 0;
   empty_data_row.data = NULL;
 
-  alpha_0 = 1.0;
+  alpha_0 = 1.17507;
   gamma_0 = 1.0;
   beta_0 = 1.0;
   mu_0 = 0.0;
 
-  alpha = 1;
+  alpha = 1.17507;
 
   w0_mean_0 = 0.0;
 

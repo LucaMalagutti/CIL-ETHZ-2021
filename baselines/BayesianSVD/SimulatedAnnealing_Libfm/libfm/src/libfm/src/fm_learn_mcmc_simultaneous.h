@@ -99,7 +99,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
     nan_cntr_w0 = 0; inf_cntr_w0 = 0; nan_cntr_w = 0; inf_cntr_w = 0; nan_cntr_v = 0; inf_cntr_v = 0; nan_cntr_alpha = 0; inf_cntr_alpha = 0; nan_cntr_w_mu = 0; inf_cntr_w_mu = 0; nan_cntr_w_lambda = 0; inf_cntr_w_lambda = 0; nan_cntr_v_mu = 0; inf_cntr_v_mu = 0; nan_cntr_v_lambda = 0; inf_cntr_v_lambda = 0;
 
     std::cout << "T_init:" << fm->T_init << " T_min:" << T_min << " alpha_sa:" << alpha_sa << " T:" << T << std::endl;
-    draw_all(train, T);
+    draw_all(train, T, i);
     // decrease SA temperature
     
     T = T * alpha_sa;
