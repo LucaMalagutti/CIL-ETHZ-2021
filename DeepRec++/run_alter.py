@@ -44,7 +44,7 @@ parser.add_argument(
     "--learning_rate", type=float, default=0.00001, metavar="N", help="learning rate"
 )
 parser.add_argument(
-    "--dropout", type=float, default=0.0, help="dropout drop probability"
+    "--dropout", type=float, default=0.4, help="dropout drop probability"
 )
 parser.add_argument(
     "--num_epochs", type=int, default=50, help="maximum number of epochs"
@@ -52,7 +52,7 @@ parser.add_argument(
 parser.add_argument(
     "--pretrain_num_epochs",
     type=int,
-    default=3,
+    default=5,
     help="maximum number of epochs",
 )
 parser.add_argument(
@@ -72,6 +72,11 @@ parser.add_argument(
     type=str,
     default="64,32,16",
     help="hidden layer sizes",
+)
+parser.add_argument(
+    "--joint_train",
+    action="store_true",
+    help="train autoencoders and mlp jointly",
 )
 parser.add_argument(
     "--gpu_ids",
@@ -145,8 +150,12 @@ def main():
         project="CIL-2021",
         entity="spaghetticode",
         config={
+            "pretrain_autoencoders": args.pretrain_autoencoders,
             "mlp_learning_rate": args.learning_rate,
-            # TODO add all hyperparameters
+            "mlp_dropout": args.dropout,
+            "num_epochs": args.num_epochs,
+            "pretrain_num_epochs": args.pretrain_num_epochs,
+            "layer_sizes": args.layer_sizes,
         },
     )
 
@@ -338,18 +347,18 @@ def main():
                     user_outputs = users_encoder(user_inputs)
                     item_outputs = items_encoder(item_inputs)
 
-                    user_loss, user_num_ratings = model.MSEloss(
+                    user_loss_ref, user_num_ratings = model.MSEloss(
                         user_outputs, user_inputs
                     )
-                    user_loss = user_loss / user_num_ratings
-                    user_loss.backward()
+                    user_loss_ref = user_loss_ref / user_num_ratings
+                    user_loss_ref.backward()
                     users_optimizer.step()
 
-                    item_loss, item_num_ratings = model.MSEloss(
+                    item_loss_ref, item_num_ratings = model.MSEloss(
                         item_outputs, item_inputs
                     )
-                    item_loss = item_loss / item_num_ratings
-                    item_loss.backward()
+                    item_loss_ref = item_loss_ref / item_num_ratings
+                    item_loss_ref.backward()
                     items_optimizer.step()
 
             users_scheduler.step()
@@ -358,9 +367,12 @@ def main():
             if batch_i % args.train_mlp_every == 0:
                 mlp.train()
                 mlp_optimizer.zero_grad()
-
-                users_encoder.eval()
-                items_encoder.eval()
+                if args.joint_train:
+                    users_optimizer.zero_grad()
+                    items_optimizer.zero_grad()
+                else:
+                    users_encoder.eval()
+                    items_encoder.eval()
 
                 user_embeddings = users_encoder.extract_embeddings(user_inputs)
                 item_embeddings = items_encoder.extract_embeddings(item_inputs)
@@ -373,9 +385,22 @@ def main():
 
                 mlp_loss = mlp_criterion(mlp_outputs, ratings.float().view(-1, 1))
                 mlp_loss.backward()
+
                 mlp_optimizer.step()
 
+                if args.joint_train:
+                    users_optimizer.step()
+                    items_optimizer.step()
+
                 mlp_tot_epoch_loss += mlp_loss.item()
+
+            wandb.log(
+                {
+                    "train_user_loss_batch": user_loss.item(),
+                    "train_item_loss_batch": item_loss.item(),
+                    "train_mlp_loss_batch": mlp_loss.item(),
+                },
+            )
 
         train_user_loss = sqrt(user_tot_epoch_loss / user_denom)
         train_item_loss = sqrt(item_tot_epoch_loss / item_denom)
@@ -396,7 +421,7 @@ def main():
             step=epoch_i,
         )
 
-        if epoch_i & args.eval_every == 0:
+        if epoch_i % args.eval_every == 0:
             users_encoder.eval()
             items_encoder.eval()
             mlp.eval()
@@ -412,7 +437,6 @@ def main():
 
                 user_vectors = user_vectors.cuda() if use_gpu else user_vectors
                 item_vectors = item_vectors.cuda() if use_gpu else item_vectors
-                ratings = ratings.cuda() if use_gpu else ratings
 
                 user_outputs = users_encoder(user_vectors.float())
                 item_outputs = items_encoder(item_vectors.float())
