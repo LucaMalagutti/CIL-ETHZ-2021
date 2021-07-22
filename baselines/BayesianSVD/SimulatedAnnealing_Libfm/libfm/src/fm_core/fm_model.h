@@ -64,6 +64,10 @@ class fm_model {
   double alpha_sa;
   double T_min;
 
+  // Scaled average parameters
+  double scale_init;
+  double gamma_scale;
+
  private:
   void splitString(const std::string& s, char c, std::vector<std::string>& v);
 
@@ -84,6 +88,9 @@ fm_model::fm_model() {
   T_init = 10.0;
   alpha_sa = 0.95;
   T_min = 0.1;
+  // Scaled average parameters
+  scale_init = 2.0;
+  gamma_scale = 0.95;
 }
 
 void fm_model::debug() {
@@ -96,6 +103,9 @@ void fm_model::debug() {
   std::cout << "reg_v=" << regv << std::endl;
   std::cout << "init ~ N(" << init_mean << "," << init_stdev << ")" << std::endl;
   // Simulated Annealing parameters
+  // Scaled average parameters
+  std::cout << "scale_init=" << scale_init << std::endl;
+  std::cout << "gamma_scale=" << gamma_scale << std::endl;
 }
 
 void fm_model::init() {

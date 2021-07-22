@@ -70,6 +70,8 @@ class fm_learn_mcmc : public fm_learn {
 
   virtual void predict(Data& data, DVector<double>& out);
 
+  virtual void predict_scaled(Data& data, DVector<double>& out);
+
   uint num_iter;
   uint num_eval_cases;
 
@@ -126,6 +128,7 @@ class fm_learn_mcmc : public fm_learn {
 
   DVector<double> pred_sum_all;
   DVector<double> pred_sum_all_but5;
+  DVector<double> pred_sum_all_scaled;
   DVector<double> pred_this;
 
   e_q_term* cache;
@@ -402,6 +405,32 @@ void fm_learn_mcmc::predict(Data& data, DVector<double>& out) {
       throw "task not supported";
     }
   }
+}
+
+void fm_learn_mcmc::predict_scaled(Data& data, DVector<double>& out) {
+    assert(data.num_cases == out.dim);
+    if (do_sample) {
+        assert(data.num_cases == pred_sum_all_scaled.dim);
+        for (uint i = 0; i < out.dim; i++) {
+            out(i) = pred_sum_all_scaled(i) / num_iter;
+        }
+    } else {
+        assert(data.num_cases == pred_this.dim);
+        for (uint i = 0; i < out.dim; i++) {
+            out(i) = pred_this(i);
+        }
+    }
+    for (uint i = 0; i < out.dim; i++) {
+        if (task == TASK_REGRESSION ) {
+            out(i) = std::min(max_target, out(i));
+            out(i) = std::max(min_target, out(i));
+        } else if (task == TASK_CLASSIFICATION) {
+            out(i) = std::min(1.0, out(i));
+            out(i) = std::max(0.0, out(i));
+        } else {
+            throw "task not supported";
+        }
+    }
 }
 
 void fm_learn_mcmc::add_main_q(Data& train, uint f) {
@@ -1180,9 +1209,11 @@ void fm_learn_mcmc::init() {
 void fm_learn_mcmc::learn(Data& train, Data& test) {
   pred_sum_all.setSize(test.num_cases);
   pred_sum_all_but5.setSize(test.num_cases);
+  pred_sum_all_scaled.setSize(test.num_cases);
   pred_this.setSize(test.num_cases);
   pred_sum_all.init(0.0);
   pred_sum_all_but5.init(0.0);
+  pred_sum_all_scaled.init(0.0);
   pred_this.init(0.0);
 
   // init caches data structure

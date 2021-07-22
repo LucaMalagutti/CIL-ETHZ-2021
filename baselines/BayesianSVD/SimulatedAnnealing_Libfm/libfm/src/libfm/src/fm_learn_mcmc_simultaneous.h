@@ -91,6 +91,13 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
   T = fm->T_init;
   T_min = fm->T_min;
   alpha_sa = fm->alpha_sa;
+  // define Scaled Monte Carlo params
+  double scale = 2.0;
+  double gamma_scale = 0.95;
+  double sum_scale = 0.0;
+  scale = fm->scale_init;
+  gamma_scale = fm->gamma_scale;
+  sum_scale = scale+1;
 
   for (uint i = num_complete_iter; i < num_iter; i++) {
     double iteration_time = getusertime();
@@ -99,6 +106,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
     nan_cntr_w0 = 0; inf_cntr_w0 = 0; nan_cntr_w = 0; inf_cntr_w = 0; nan_cntr_v = 0; inf_cntr_v = 0; nan_cntr_alpha = 0; inf_cntr_alpha = 0; nan_cntr_w_mu = 0; inf_cntr_w_mu = 0; nan_cntr_w_lambda = 0; inf_cntr_w_lambda = 0; nan_cntr_v_mu = 0; inf_cntr_v_mu = 0; nan_cntr_v_lambda = 0; inf_cntr_v_lambda = 0;
 
     std::cout << "T_init:" << fm->T_init << " T_min:" << T_min << " alpha_sa:" << alpha_sa << " T:" << T << std::endl;
+    std::cout << "scale_init:" << fm->scale_init << " gamma_scale:" << gamma_scale << " scale:" << scale+1 << std::endl;
     draw_all(train, T, i);
     // decrease SA temperature
     
@@ -148,6 +156,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
         if (i >= 50) {
           pred_sum_all_but5(c) += p;
         }
+        pred_sum_all_scaled(c) += p*(scale+1);
       }
 
       // Evaluate the training dataset and update the e-terms
@@ -224,12 +233,15 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
 
     // Evaluate the test data sets
     if (task == TASK_REGRESSION) {
-      double rmse_test_this, mae_test_this, rmse_test_all, mae_test_all, rmse_test_all_but5, mae_test_all_but5;
+      double rmse_test_this, mae_test_this, rmse_test_all, mae_test_all, rmse_test_all_but5, rmse_test_all_scaled, mae_test_all_but5, mae_test_all_scaled;
        _evaluate(pred_this, test.target, 1.0, rmse_test_this, mae_test_this, num_eval_cases);
        _evaluate(pred_sum_all, test.target, 1.0/(i+1), rmse_test_all, mae_test_all, num_eval_cases);
        _evaluate(pred_sum_all_but5, test.target, 1.0/(i-50+1), rmse_test_all_but5, mae_test_all_but5, num_eval_cases);
+       _evaluate(pred_sum_all_scaled, test.target, 1.0/sum_scale, rmse_test_all_scaled, mae_test_all_scaled, num_eval_cases);
 
-      std::cout << "#Iter=" << std::setw(3) << i << "\tTrain=" << rmse_train << "\tTest=" << rmse_test_all << "\tTestAllBut50=" << rmse_test_all_but5 << std::endl;
+      std::cout << "#Iter=" << std::setw(3) << i << "\tTrain=" << rmse_train
+                << "\tTest=" << rmse_test_all << "\tTestAllBut50=" << rmse_test_all_but5
+                << "\tTestScaled=" << rmse_test_all_scaled << std::endl;
 
       if (log != NULL) {
         log->log("rmse", rmse_test_all);
@@ -279,6 +291,10 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
     } else {
       throw "unknown task";
     }
+
+    // update the scale for the weighted sum
+    scale = scale*gamma_scale;
+    sum_scale += (scale+1);
   }
 }
 

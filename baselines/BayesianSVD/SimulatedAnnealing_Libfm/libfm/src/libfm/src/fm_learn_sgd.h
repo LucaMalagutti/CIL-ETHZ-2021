@@ -38,6 +38,7 @@ class fm_learn_sgd: public fm_learn {
 
   void debug();
   virtual void predict(Data& data, DVector<double>& out);
+  virtual void predict_scaled(Data& data, DVector<double>& out);
 
   int num_iter;
   double learn_rate;
@@ -88,6 +89,8 @@ void fm_learn_sgd::predict(Data& data, DVector<double>& out) {
     out(data.data->getRowIndex()) = p;
   }
 }
+
+void fm_learn_sgd::predict_scaled(Data& data, DVector<double>& out) { std::cout<<"predict scaled not implemented"<<std::endl; return; }
 
 
 #endif /*FM_LEARN_SGD_H_*/

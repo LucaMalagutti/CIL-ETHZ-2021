@@ -35,6 +35,7 @@ class fm_learn {
   virtual double evaluate(Data& data);
   virtual void learn(Data& train, Data& test);
   virtual void predict(Data& data, DVector<double>& out) = 0;
+  virtual void predict_scaled(Data& data, DVector<double>& out) = 0;
   virtual void debug();
 
   DataMetaInfo* meta;

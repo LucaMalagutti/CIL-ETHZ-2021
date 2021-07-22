@@ -79,6 +79,7 @@ int main(int argc, char **argv) {
     const std::string param_test_file  = cmdline.registerParameter("test", "filename for test data [MANDATORY]");
     const std::string param_val_file   = cmdline.registerParameter("validation", "filename for validation data (only for SGDA)");
     const std::string param_out        = cmdline.registerParameter("out", "filename for output");
+    const std::string param_out_scaled = cmdline.registerParameter("out_scaled", "filename for output with scaled average");
 
     const std::string param_dim        = cmdline.registerParameter("dim", "'k0,k1,k2': k0=use bias, k1=use 1-way interactions, k2=dim of 2-way interactions; default=1,1,8");
     const std::string param_regular    = cmdline.registerParameter("regular", "'r0,r1,r2' for SGD and ALS: r0=bias regularization, r1=1-way regularization, r2=2-way regularization");
@@ -105,6 +106,9 @@ int main(int argc, char **argv) {
     const std::string param_alpha_sa = cmdline.registerParameter("alpha_sa", "discount factor for the Simulated Annealing in MCMC; default=0.95");
     const std::string param_T_min = cmdline.registerParameter("T_min", "Minimum temperature for the Simulated Annealing in MCMC; default=0.1");
 
+    const std::string param_scale_init = cmdline.registerParameter("scale_init", "initial scale for the scaled average in Monte Carlo; default=2");
+    const std::string param_gamma_scale = cmdline.registerParameter("gamma_scale", "discount factor for the scaled average in Monte Carlo; default=0.95");
+
     const std::string param_do_sampling  = "do_sampling";
     const std::string param_do_multilevel  = "do_multilevel";
     const std::string param_num_eval_cases  = "num_eval_cases";
@@ -126,6 +130,9 @@ int main(int argc, char **argv) {
     if (! cmdline.hasParameter(param_T_init)) { cmdline.setValue(param_T_init, "10.0"); }
     if (! cmdline.hasParameter(param_alpha_sa)) { cmdline.setValue(param_alpha_sa, "0.95"); }
     if (! cmdline.hasParameter(param_T_min)) { cmdline.setValue(param_T_min, "0.1"); }
+    // Set default params for scaled average
+    if (! cmdline.hasParameter(param_scale_init)) { cmdline.setValue(param_scale_init, "2.0"); }
+    if (! cmdline.hasParameter(param_gamma_scale)) { cmdline.setValue(param_gamma_scale, "0.95"); }
 
     // Check for invalid flags.
     if (! cmdline.getValue(param_method).compare("mcmc") && cmdline.hasParameter(param_save_model)) {
@@ -266,6 +273,9 @@ int main(int argc, char **argv) {
       fm.T_init = cmdline.getValue(param_T_init, 10.0);
       fm.alpha_sa = cmdline.getValue(param_alpha_sa, 0.95);
       fm.T_min = cmdline.getValue(param_T_min, 0.1);
+      // set scaled average parameters
+      fm.scale_init = cmdline.getValue(param_scale_init, 2.0);
+      fm.gamma_scale = cmdline.getValue(param_gamma_scale, 0.95);
       fm.init();
 
     }
@@ -437,6 +447,12 @@ int main(int argc, char **argv) {
       pred.setSize(test.num_cases);
       fml->predict(test, pred);
       pred.save(cmdline.getValue(param_out));
+    }
+    if (cmdline.hasParameter(param_out_scaled)) {
+      DVector<double> pred;
+      pred.setSize(test.num_cases);
+      fml->predict_scaled(test, pred);
+      pred.save(cmdline.getValue(param_out_scaled));
     }
 
     // () save the FM model
