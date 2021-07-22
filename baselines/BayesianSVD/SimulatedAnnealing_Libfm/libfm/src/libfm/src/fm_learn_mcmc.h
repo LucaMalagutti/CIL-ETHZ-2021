@@ -74,6 +74,7 @@ class fm_learn_mcmc : public fm_learn {
 
   uint num_iter;
   uint num_eval_cases;
+  double sum_scale;
 
   // Hyperpriors
   double alpha_0, gamma_0, beta_0, mu_0;
@@ -412,7 +413,7 @@ void fm_learn_mcmc::predict_scaled(Data& data, DVector<double>& out) {
     if (do_sample) {
         assert(data.num_cases == pred_sum_all_scaled.dim);
         for (uint i = 0; i < out.dim; i++) {
-            out(i) = pred_sum_all_scaled(i) / num_iter;
+            out(i) = pred_sum_all_scaled(i) / sum_scale;
         }
     } else {
         assert(data.num_cases == pred_this.dim);

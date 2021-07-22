@@ -94,7 +94,7 @@ void fm_learn_mcmc_simultaneous::_learn(Data& train, Data& test) {
   // define Scaled Monte Carlo params
   double scale = 2.0;
   double gamma_scale = 0.95;
-  double sum_scale = 0.0;
+  sum_scale = 0.0;
   scale = fm->scale_init;
   gamma_scale = fm->gamma_scale;
   sum_scale = scale+1;
