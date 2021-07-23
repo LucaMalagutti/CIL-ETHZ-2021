@@ -589,8 +589,7 @@ def load_official_trainvaltest_split(dataset, testing=False, rating_map=None, po
 
 
 def create_CIL_trainvaltest_split(testing=False, verbose=True, rating_map=None,
-                              post_rating_map=None, ratio=1, test_ratio=0.1):
-
+                              post_rating_map=None, ratio=1, test_ratio=0.1, val_ratio=0.05):
 
     data_pd = pd.read_csv("../../data/data_train.csv")
     data_pd = sklearn.utils.shuffle(data_pd)
@@ -607,7 +606,7 @@ def create_CIL_trainvaltest_split(testing=False, verbose=True, rating_map=None,
 
     # number of test and validation edges
     num_test = int(np.ceil(ratings.shape[0] * test_ratio))
-    num_val = int(np.ceil(ratings.shape[0] * (1-test_ratio) * 0.05))
+    num_val = int(np.ceil(ratings.shape[0] * (1-test_ratio) * val_ratio))
     num_train = ratings.shape[0] - num_val - num_test
 
     pairs_nonzero = np.vstack([u_nodes, v_nodes]).transpose()
@@ -642,18 +641,6 @@ def create_CIL_trainvaltest_split(testing=False, verbose=True, rating_map=None,
 
     rating_mx_train = sp.csr_matrix((data, [u_train_idx, v_train_idx]),
                                     shape=[num_users, num_items], dtype=np.float32)
-    
-    # print('rating_mx_train', rating_mx_train.shape)
-    # print('train_labels', train_labels.shape)
-    # print('u_train_idx', u_train_idx.shape)
-    # print('v_train_idx', v_train_idx.shape)
-    # print('val_labels', val_labels.shape)
-    # print('u_val_idx', u_val_idx.shape)
-    # print('v_val_idx', v_val_idx.shape)
-    # print('test_labels', test_labels.shape)
-    # print('u_test_idx', u_test_idx.shape)
-    # print('v_test_idx', v_test_idx.shape)
-    # print('class_values', class_values.shape)
 
     return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
         val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values
