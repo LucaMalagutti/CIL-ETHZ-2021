@@ -1,13 +1,15 @@
+"""
+    Extracts an inner intermediate representation (embedding) of the user vectors
+    from a saved autoencoder model
+"""
+
 # Copyright (c) 2017 NVIDIA Corporation
 import argparse
 import copy
 import json
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 import torch
-from data_utils.CIL_data_converter import convert2CILdictionary
 from reco_encoder.data import input_layer
 from reco_encoder.model import model
 from torch.autograd import Variable
@@ -79,6 +81,7 @@ else:
 
 
 def main():
+    # Loads training data
     params = dict()
     params["batch_size"] = 1
     params["data_dir"] = args.path_to_train_data
@@ -91,9 +94,9 @@ def main():
     print("Total items found: {}".format(len(data_layer.data.keys())))
     print("Vector dim: {}".format(data_layer.vector_dim))
 
+    # Loads submission data as evaluation data
     print("Loading submission data")
     eval_params = copy.deepcopy(params)
-    # must set eval batch size to 1 to make sure no examples are missed
     eval_params["batch_size"] = 1
     eval_params["data_dir"] = args.path_to_eval_data
     eval_data_layer = input_layer.UserItemRecDataProvider(
@@ -104,6 +107,7 @@ def main():
     print("Total submission items found: {}".format(len(eval_data_layer.data.keys())))
     print("Vector dim: {}".format(eval_data_layer.vector_dim))
 
+    # Initializes model in "deep feature extraction" mode
     rencoder = model.AutoEncoder(
         layer_sizes=[data_layer.vector_dim]
         + [int(l_sizes) for l_sizes in args.hidden_layers.split(",")],
@@ -111,35 +115,33 @@ def main():
         is_constrained=args.constrained,
         dp_drop_prob=args.drop_prob,
         last_layer_activations=not args.skip_last_layer_nl,
-        extract_deep_features=True
+        extract_deep_features=True,
     )
 
+    # Loads pre-trained model
     path_to_model = Path(args.save_path)
     if path_to_model.is_file():
         print("Loading model from: {}".format(path_to_model))
         rencoder.load_state_dict(torch.load(args.save_path))
 
     print("######################################################")
-    print("######################################################")
     print("############# AutoEncoder Model: #####################")
     print(rencoder)
     print("######################################################")
-    print("######################################################")
 
     rencoder.eval()
-
     if use_gpu:
         rencoder = rencoder.cuda()
 
     inv_userIdMap = {v: k for k, v in data_layer.userIdMap.items()}
-    inv_itemIdMap = {v: k for k, v in data_layer.itemIdMap.items()}
-
     eval_data_layer.src_data = data_layer.data
 
     user_deepfeatures_dict = dict()
 
-    for i, ((out, src), majorInd) in enumerate(eval_data_layer.iterate_one_epoch_eval(for_inf=True)):
-
+    # Extracts intermediate representation for each user
+    for i, ((_, src), majorInd) in enumerate(
+        eval_data_layer.iterate_one_epoch_eval(for_inf=True)
+    ):
         # input for the autoencoder
         user_ratings = Variable(src.cuda().to_dense() if use_gpu else src.to_dense())
 
@@ -152,7 +154,7 @@ def main():
         if user_idx not in user_deepfeatures_dict:
             # new user: save deep features in the dictionary
             user_deepfeatures_dict[user_idx] = []
-            for ind in range(32):   # 32 deep features
+            for ind in range(32):  # 32 deep features
                 user_deepfeatures_dict[user_idx].append(str(deep_features[ind]))
 
             if i % 1000 == 0:
@@ -163,6 +165,7 @@ def main():
         json.dump(user_deepfeatures_dict, outf)
 
     print("Saved deep feature dictionary to:", args.predictions_path)
+
 
 if __name__ == "__main__":
     main()

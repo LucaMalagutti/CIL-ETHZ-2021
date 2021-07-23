@@ -1,10 +1,11 @@
+"""Generates a valid submission file using a saved trained model"""
+
 # Copyright (c) 2017 NVIDIA Corporation
 import argparse
 import copy
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import torch
 from data_utils.CIL_data_converter import convert2CILdictionary
 from reco_encoder.data import input_layer
@@ -62,7 +63,7 @@ parser.add_argument(
 parser.add_argument(
     "--predictions_path",
     type=str,
-    default="out.txt",
+    default="deeprec_predictions.csv",
     metavar="N",
     help="where to save predictions",
 )
@@ -78,6 +79,7 @@ else:
 
 
 def main():
+    # Loads up training data
     params = dict()
     params["batch_size"] = 1
     params["data_dir"] = args.path_to_train_data
@@ -90,9 +92,9 @@ def main():
     print("Total items found: {}".format(len(data_layer.data.keys())))
     print("Vector dim: {}".format(data_layer.vector_dim))
 
+    # Loads submission data as evaluation data
     print("Loading submission data")
     eval_params = copy.deepcopy(params)
-    # must set eval batch size to 1 to make sure no examples are missed
     eval_params["batch_size"] = 1
     eval_params["data_dir"] = args.path_to_eval_data
     eval_data_layer = input_layer.UserItemRecDataProvider(
@@ -103,6 +105,7 @@ def main():
     print("Total submission items found: {}".format(len(eval_data_layer.data.keys())))
     print("Vector dim: {}".format(eval_data_layer.vector_dim))
 
+    # Initializes the model
     rencoder = model.AutoEncoder(
         layer_sizes=[data_layer.vector_dim]
         + [int(l_sizes) for l_sizes in args.hidden_layers.split(",")],
@@ -112,16 +115,15 @@ def main():
         last_layer_activations=not args.skip_last_layer_nl,
     )
 
+    # Overrides the initialized model with a saved pre-trained model
     path_to_model = Path(args.save_path)
     if path_to_model.is_file():
         print("Loading model from: {}".format(path_to_model))
         rencoder.load_state_dict(torch.load(args.save_path))
 
     print("######################################################")
-    print("######################################################")
     print("############# AutoEncoder Model: #####################")
     print(rencoder)
-    print("######################################################")
     print("######################################################")
 
     rencoder.eval()
@@ -136,23 +138,23 @@ def main():
 
     preds = dict()
 
+    # Performs a complete iteration in evaluation mode on the submission data
+    # generating predicted ratings
     for i, ((out, src), majorInd) in enumerate(
         eval_data_layer.iterate_one_epoch_eval(for_inf=True)
     ):
         inputs = Variable(src.cuda().to_dense() if use_gpu else src.to_dense())
-        # print("inputs:",inputs)
         targets_np = out.to_dense().numpy()[0, :]
-        # print("targets",targets_np)
         outputs = rencoder(inputs).cpu().data.numpy()[0, :]
         non_zeros = targets_np.nonzero()[0].tolist()
         major_key = inv_userIdMap[majorInd]  # user
         preds[major_key] = []
         for ind in non_zeros:
             preds[major_key].append((inv_itemIdMap[ind], outputs[ind]))
-            # outf.write("{}\t{}\t{}\t{}\n".format(major_key, inv_itemIdMap[ind], outputs[ind], targets_np[ind]))
         if i % 1000 == 0:
             print("Done: {} predictions".format(i))
 
+    # Writes final submission file
     preds = convert2CILdictionary(preds)
     with open(args.predictions_path, "w") as outf:
         outf.write("Id,Prediction\n")
