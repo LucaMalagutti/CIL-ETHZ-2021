@@ -1,3 +1,4 @@
+"""Generates a valid submission file using a saved trained mlp and embeddings for users and items"""
 import argparse
 import copy
 import random
@@ -21,7 +22,7 @@ np.random.seed(0)
 parser = argparse.ArgumentParser(description="RecoEncoder")
 
 parser.add_argument(
-    "--dropout", type=float, default=0.0, metavar="N", help="dropout drop probability"
+    "--dropout", type=float, default=0.4, metavar="N", help="dropout drop probability"
 )
 parser.add_argument(
     "--input_size",
@@ -62,14 +63,14 @@ parser.add_argument(
 parser.add_argument(
     "--logdir",
     type=str,
-    default="model_save/mlp/",
+    default="model_save/mlp/model.last",
     metavar="N",
     help="where to load model from",
 )
 parser.add_argument(
     "--predictions_path",
     type=str,
-    default="mlp_out.csv",
+    default="pred.csv",
     metavar="N",
     help="where to save predictions",
 )

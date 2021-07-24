@@ -1,7 +1,11 @@
+"""
+Train an MLP that for each entry in the train dataset takes as input the embeddigns of the user and item of the entry and predicts the rating.
+"""
 import argparse
 import os
 import pickle
 import random
+from pathlib import Path
 
 import numpy as np
 import pandas
@@ -15,14 +19,14 @@ from tqdm import tqdm
 torch.manual_seed(0)
 random.seed(0)
 np.random.seed(0)
-
+os.environ["WANDB_MODE"] = "offline"
 
 parser = argparse.ArgumentParser(description="MLP")
 parser.add_argument(
     "--learning_rate", type=float, default=0.00001, metavar="N", help="learning rate"
 )
 parser.add_argument(
-    "--dropout", type=float, default=0.0, metavar="N", help="dropout drop probability"
+    "--dropout", type=float, default=0.4, metavar="N", help="dropout drop probability"
 )
 parser.add_argument(
     "--num_epochs", type=int, default=50, metavar="N", help="maximum number of epochs"
@@ -44,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
     "--input_size",
     type=int,
-    default="128",
+    default="576",
     metavar="N",
     help="size of the input",
 )
@@ -153,6 +157,8 @@ def main():
         },
     )
 
+    Path(args.logdir).mkdir(parents=True, exist_ok=True)
+
     mlp = model.MLP(args.input_size, args.layer_sizes, args.dropout)
 
     print(mlp)
@@ -165,15 +171,21 @@ def main():
     optimizer = optim.Adam(mlp.parameters(), lr=args.learning_rate)
     criterion = model.RMSELoss()
 
+    # Loading train dataset with (user_embedding, item_embedding, ratings) entries
     train_dataset = EmbeddingDataset(
-        args.path_to_user_embs, args.path_to_item_embs, args.path_to_train_data
+        args.path_to_user_embs,
+        args.path_to_item_embs,
+        args.path_to_train_data,
     )
     train_dataloader = DataLoader(train_dataset, batch_size=512)
     val_dataset = EmbeddingDataset(
-        args.path_to_user_embs, args.path_to_item_embs, args.path_to_eval_data
+        args.path_to_user_embs,
+        args.path_to_item_embs,
+        args.path_to_eval_data,
     )
     val_dataloader = DataLoader(val_dataset, batch_size=512)
 
+    # Starts model training
     for i in range(1, args.num_epochs + 1):
         mlp.train()
         print("Epoch nr. " + str(i))
@@ -193,6 +205,7 @@ def main():
 
         wandb.log({"mlp_train_RMSE": train_loss})
 
+        # Evaluates model
         if i % args.save_every == 0:
             mlp.eval()
             eval_loss = 0
@@ -208,6 +221,7 @@ def main():
             wandb.log({"mlp_val_RMSE": eval_loss})
 
             torch.save(mlp.state_dict(), args.logdir + "mlp@epoch_" + str(i))
+    torch.save(mlp.state_dict(), args.logdir + "model.last")
 
 
 if __name__ == "__main__":
