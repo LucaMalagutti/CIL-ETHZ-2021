@@ -1,6 +1,16 @@
-import math
+"""Transforms the CIL competition dataset into a form usable by the autoencoder model"""
+
 import random
 import sys
+from math import floor
+from pathlib import Path
+
+import numpy as np
+import torch
+
+torch.manual_seed(1)
+random.seed(1)
+np.random.seed(1)
 
 
 def print_stats(data):
@@ -8,8 +18,14 @@ def print_stats(data):
     print("STATS")
     for user in data:
         total_ratings += len(data[user])
+    items_set = []
+    for it_ratings_list in data.values():
+        items_list = [entry[0] for entry in it_ratings_list]
+        items_set.extend(items_list)
+    items_set = set(items_set)
     print("Total Ratings: {}".format(total_ratings))
     print("Total User count: {}".format(len(data.keys())))
+    print("Total items count: {}".format(len(items_set)))
 
 
 def save_data_to_file(data, filename):
@@ -40,16 +56,25 @@ def convert2CILdictionary(dictionary):
 
 def main(args):
     inpt = args[1]
-    out_prefix_train = "baselines/DeepRec/data/train90/CIL_data"
-    out_prefix_valid = "baselines/DeepRec/data/valid/CIL_data"
-    out_prefix_submission = "baselines/DeepRec/data/submission/CIL_data"
-    percent = 0.9  # 0.9 for 90%, 1.0 for 100% train and no validation
+    out_prefix_train = "data/train90/CIL_data90"
+    out_prefix_valid = "data/valid/CIL_data10"
+    out_prefix_submission = "data/submission/CIL_data"
+
+    Path(out_prefix_train).mkdir(parents=True, exist_ok=True)
+    Path(out_prefix_valid).mkdir(parents=True, exist_ok=True)
+    Path(out_prefix_submission).mkdir(parents=True, exist_ok=True)
+
+    # 0.9 for 90%, 1.0 for 100% train and no validation
+    percent = 0.9
+    if len(args) > 2:
+        if args[2] == "submission":
+            # take all the ratings to generate the submission file
+            percent = 1
+
     data = dict()
 
     total_rating_count = 0
-    with open(
-        inpt, "r"
-    ) as inpt_f:  # ratings.csv headers: userId,movieId,rating,timestamp
+    with open(inpt, "r") as inpt_f:  # ratings.csv headers: userId,movieId,rating
         for line in inpt_f:
             if "Id" in line:
                 continue
@@ -71,7 +96,7 @@ def main(args):
     validation_data = dict()
     train_set_items = set()
 
-    random.seed(1234)
+    random.seed(1235)
 
     for user in data.keys():
         if len(data[user]) < 2:
@@ -84,7 +109,7 @@ def main(args):
         ratings = data[user]
         if len(args) <= 2:
             random.shuffle(ratings)
-        last_train_ind = math.floor(percent * len(ratings))
+        last_train_ind = floor(percent * len(ratings))
         training_data[user] = ratings[:last_train_ind]
         for rating_item in ratings[:last_train_ind]:
             train_set_items.add(rating_item[0])  # keep track of items from training set
@@ -97,6 +122,7 @@ def main(args):
             rating for rating in userRatings if rating[0] in train_set_items
         ]
 
+    # Saves train and evaluation data files
     if len(args) <= 2:
         print("Training Data")
         print_stats(training_data)
@@ -108,6 +134,7 @@ def main(args):
         save_data_to_file(
             convert2CILdictionary(validation_data), out_prefix_valid + ".valid"
         )
+    # Saves submission data file
     elif args[2] == "submission":
         print("Submission Data")
         print_stats(training_data)

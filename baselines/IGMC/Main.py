@@ -134,6 +134,8 @@ parser.add_argument('--standard-rating', action='store_true', default=False,
 parser.add_argument('--ratio', type=float, default=1.0,
                     help="For ml datasets, if ratio < 1, downsample training data to the\
                     target ratio")
+parser.add_argument('--val-ratio', type=float, default=0.05,
+                    help='ratio of dataset used for validation')
 
 
 '''
@@ -247,7 +249,7 @@ elif args.data_name == 'CIL':
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
         val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices,
         test_v_indices, class_values
-    ) = create_CIL_trainvaltest_split(args.testing, True, rating_map, post_rating_map, args.ratio, 0
+    ) = create_CIL_trainvaltest_split(args.testing, True, rating_map, post_rating_map, args.ratio, 0, args.val_ratio
     )
 else:
     (

@@ -32,7 +32,7 @@ def generate_submission(args):
         for i, x in enumerate(np.arange(1, 6).tolist())
     }
     print('post_rating_map', post_rating_map)
-    adj_train = create_CIL_trainvaltest_split(False, True, rating_map, post_rating_map, args.ratio, 0)[2]
+    adj_train = create_CIL_trainvaltest_split(False, True, rating_map, post_rating_map, args.ratio, 0, 0)[2]
     val_test_appendix = 'submission'
     data_combo = (args.data_name, args.data_appendix, val_test_appendix)
 

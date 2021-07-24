@@ -1,3 +1,8 @@
+"""
+    Extracts an inner intermediate representation (embedding) of the user or items vectors
+    from a saved autoencoder model
+"""
+# Copyright (c) 2017 NVIDIA Corporation
 import argparse
 import copy
 import json
@@ -13,9 +18,9 @@ from reco_encoder.data import input_layer
 from reco_encoder.model import model
 from torch.autograd import Variable
 
-torch.manual_seed(0)
-random.seed(0)
-np.random.seed(0)
+torch.manual_seed(44)
+random.seed(44)
+np.random.seed(44)
 
 parser = argparse.ArgumentParser(description="RecoEncoder")
 
@@ -61,9 +66,9 @@ parser.add_argument(
 parser.add_argument(
     "--save_path",
     type=str,
-    default="autorec.pt",
+    default="model_save/pretrain_emb/",
     metavar="N",
-    help="where to saved model",
+    help="where to load saved model from",
 )
 parser.add_argument(
     "--predictions_path",
@@ -102,6 +107,8 @@ def main():
     print("Data loaded")
     print("Total items found: {}".format(len(data_layer.data.keys())))
     print("Vector dim: {}".format(data_layer.vector_dim))
+
+    Path(args.predictions_path).mkdir(parents=True, exist_ok=True)
 
     print("Loading submission data")
     eval_params = copy.deepcopy(params)
@@ -149,11 +156,15 @@ def main():
 
     embeddings_dict = dict()
 
+    # Cycle through all the major elements (users or items) in the eval dataset and feed it to the autoencoder,
+    # saving the state of the central layer of the autoencoder as an embedding for each
     for i, ((out, src), majorInd) in enumerate(
         eval_data_layer.iterate_one_epoch_eval(for_inf=True)
     ):
 
         # input for the autoencoder
+        # for the users it's the 1000 sized vector of their ratings
+        # similarly for the items it's a 10000 sized vector
         major_ratings = Variable(src.cuda().to_dense() if use_gpu else src.to_dense())
 
         # rencoder is built to output the deep features
@@ -166,8 +177,6 @@ def main():
             major_idx = inv_itemIdMap[majorInd]
 
         if major_idx not in embeddings_dict:
-            if major_idx == 955:
-                print(major_idx)
 
             # new user: save deep features in the dictionary
             embeddings_dict[int(major_idx)] = embedding.tolist()
@@ -177,7 +186,7 @@ def main():
 
     print("Saving embedding dictionary..")
     print(len(embeddings_dict))
-    emb_path = args.predictions_path + args.major + "_embs.pckl"
+    emb_path = args.predictions_path + args.major + "_emb.pckl"
     with open(emb_path, "wb") as outf:
         pickle.dump(embeddings_dict, outf)
 

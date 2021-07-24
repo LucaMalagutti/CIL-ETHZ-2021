@@ -1,7 +1,10 @@
+"""Trains jointly and saves autoencoders for users and items along with an mlp for ratings prediction"""
+
 import argparse
 import os
 import random
 from math import sqrt
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -20,6 +23,7 @@ from tqdm import tqdm
 torch.manual_seed(0)
 random.seed(0)
 np.random.seed(0)
+os.environ["WANDB_MODE"] = "offline"
 
 
 parser = argparse.ArgumentParser(description="Alternated MLP+DeepRec")
@@ -159,11 +163,11 @@ def main():
         },
     )
 
-    if not os.path.exists("model_save/"):
-        os.mkdir("model_save/")
-    if not os.path.exists(args.logdir):
-        os.mkdir(args.logdir)
+    Path(args.logdir).mkdir(parents=True, exist_ok=True)
+    Path("model_save/pretrain_emb/items/").mkdir(parents=True, exist_ok=True)
+    Path("model_save/pretrain_emb/users/").mkdir(parents=True, exist_ok=True)
 
+    # Autoencoders parameters
     layer_sizes_items = [10000, 2048, 512, 512]
     layer_sizes_users = [1000, 512, 32, 64]
     dp_items = 0.4
@@ -179,6 +183,7 @@ def main():
         f"model_save/pretrain_emb/items/model.epoch_{args.pretrain_num_epochs}"
     )
 
+    # Command to train items autoencoder
     items_train_cmd = f"""python3 run.py --num_epochs={args.pretrain_num_epochs}
                                         --batch_size={encoder_batch_size}
                                         --dense_refeeding_steps={dense_refeeding_steps}
@@ -200,6 +205,7 @@ def main():
         f"model_save/pretrain_emb/users/model.epoch_{args.pretrain_num_epochs}"
     )
 
+    # Command to train users autoencoder
     users_train_cmd = f"""python3 run.py --num_epochs={args.pretrain_num_epochs}
                                 --batch_size={encoder_batch_size}
                                 --dense_refeeding_steps={dense_refeeding_steps}
@@ -233,6 +239,7 @@ def main():
         dp_drop_prob=dp_users,
     )
 
+    # Reloading the just trained Autoencoders
     if args.pretrain_autoencoders:
         print("Loading model from: {}".format(model_checkpoint_items))
         items_encoder.load_state_dict(torch.load(model_checkpoint_items))
@@ -275,9 +282,13 @@ def main():
     )
 
     mlp_optimizer = optim.Adam(mlp.parameters(), lr=args.learning_rate)
+
+    # Full mlp loss
     mlp_criterion = model.RMSELoss()
 
+    # Dataset of [user_matrix_vector, item_matrix_vector, user_item_rating]
     train_dataset = RatingDataset(args.path_to_train_data)
+
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=encoder_batch_size,
@@ -285,6 +296,7 @@ def main():
         drop_last=True,
     )
 
+    # Dataset of [user_matrix_vector, item_matrix_vector, user_item_rating]
     eval_dataset = RatingDataset(args.path_to_eval_data)
     eval_dataloader = DataLoader(
         eval_dataset,
@@ -293,13 +305,20 @@ def main():
     )
 
     for epoch_i in range(1, args.num_epochs + 1):
+
+        # Different loss for each autoencoder
         user_tot_epoch_loss = 0
         item_tot_epoch_loss = 0
+
+        # Variables for loss normalization
         user_denom = 0
         item_denom = 0
+
         mlp_tot_epoch_loss = 0
 
         print(f"EPOCH: {epoch_i}")
+
+        # From 320-383 similar training loop as in run.py just duplicated for both autoencoders
         for batch_i, batch in enumerate(tqdm(train_dataloader)):
             users_encoder.train()
             items_encoder.train()
@@ -364,9 +383,13 @@ def main():
             users_scheduler.step()
             items_scheduler.step()
 
+            # Training of the MLP
             if batch_i % args.train_mlp_every == 0:
                 mlp.train()
                 mlp_optimizer.zero_grad()
+
+                # If we want to backprop the mlp's loss to the autoencoders we zero out their gradients
+                # otherwise we put both in eval mode
                 if args.joint_train:
                     users_optimizer.zero_grad()
                     items_optimizer.zero_grad()
@@ -374,13 +397,13 @@ def main():
                     users_encoder.eval()
                     items_encoder.eval()
 
+                # We extract the embeddings each iteration online, unlike run_mlp.py
                 user_embeddings = users_encoder.extract_embeddings(user_inputs)
                 item_embeddings = items_encoder.extract_embeddings(item_inputs)
 
                 mlp_inputs = torch.cat((user_embeddings, item_embeddings), 1)
                 mlp_inputs = mlp_inputs.cuda() if use_gpu else mlp_inputs
 
-                # print(mlp_inputs.shape)
                 mlp_outputs = mlp(mlp_inputs.float())
 
                 mlp_loss = mlp_criterion(mlp_outputs, ratings.float().view(-1, 1))
@@ -388,6 +411,8 @@ def main():
 
                 mlp_optimizer.step()
 
+                # If we want to train jointly we update the parameters of the autoencoders
+                # after backpropagating through the computational graph of the mlp's loss
                 if args.joint_train:
                     users_optimizer.step()
                     items_optimizer.step()
@@ -496,6 +521,15 @@ def main():
                 items_encoder.state_dict(),
                 args.logdir + "items_encoder_epoch_" + str(epoch_i),
             )
+    torch.save(mlp.state_dict(), args.logdir + "model.last" + str(epoch_i))
+    torch.save(
+        users_encoder.state_dict(),
+        args.logdir + "users_encoder.last",
+    )
+    torch.save(
+        items_encoder.state_dict(),
+        args.logdir + "items_encoder.last",
+    )
 
 
 if __name__ == "__main__":
