@@ -9,7 +9,7 @@ Our model can be trained jointly, finetuning the autoencoders along with the MLP
 All the requirements needed to reproduce the baseline results are contained in the file ``DeepRec++_requirements.txt``
 This code was tested when using Python 3.8.x
 
-# Dataset generation
+## Dataset generation
 
 All the data files need to train and evaluate the model can be generated using the following commands.
 
