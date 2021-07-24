@@ -1,3 +1,5 @@
+"""Defines a Pytorch Dataset and Dataloader to use the CIL dataset"""
+
 import os
 
 import numpy as np
@@ -6,6 +8,8 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class CIL(Dataset):
+    # dataset of (user_index, item_index, rating) tuples
+
     def __init__(self, split="train", path="data/"):
         self.split = split
         self.train_df = np.loadtxt(
@@ -44,13 +48,15 @@ class CIL(Dataset):
         return self.train_df.shape[0]
 
 
-def get_dataloader(args, split="train"):
+def get_dataloader(args, split="train", shuffle=True):
+    # wraps the CIL dataset into a Dataloader and returns it
+
     dataset = CIL(split)
 
     dataloader = DataLoader(
         dataset,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=shuffle,
         pin_memory=True,
         drop_last=False,
     )

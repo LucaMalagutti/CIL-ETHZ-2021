@@ -1,3 +1,5 @@
+"""Contains code to transform the given CIL dataset in a form usable by the LightGCN model"""
+
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -5,6 +7,7 @@ from sklearn.model_selection import train_test_split
 
 
 def extract_users_items_predictions(data_pd):
+    # parses a row of the "Id" column in the given competition dataset
     reg = r"r(\d+)_c(\d+)"
 
     users, movies = [
@@ -65,7 +68,7 @@ sp.save_npz("data/R_val", sp.csr_matrix(filled_validation_matrix))
 sp.save_npz("data/R_mask_val", sp.csr_matrix(val_mask))
 
 
-# submission
+# create and save submission data
 sub_pd = pd.read_csv("../../data/sample_submission.csv")
 sub_users, sub_movies, sub_ratings = extract_users_items_predictions(sub_pd)
 

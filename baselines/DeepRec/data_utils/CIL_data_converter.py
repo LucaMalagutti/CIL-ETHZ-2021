@@ -1,3 +1,5 @@
+"""Transforms the CIL competition dataset into a form usable by the autoencoder model"""
+
 import random
 import sys
 from math import floor
@@ -40,16 +42,21 @@ def convert2CILdictionary(dictionary):
 
 def main(args):
     inpt = args[1]
-    out_prefix_train = "baselines/DeepRec/data/train90/CIL_data"
-    out_prefix_valid = "baselines/DeepRec/data/valid/CIL_data"
-    out_prefix_submission = "baselines/DeepRec/data/submission/CIL_data"
-    percent = 0.9  # 0.9 for 90%, 1.0 for 100% train and no validation
+    out_prefix_train = "data/train90/CIL_data90"
+    out_prefix_valid = "data/valid/CIL_data10"
+    out_prefix_submission = "data/submission/CIL_data"
+
+    # 0.9 for 90%, 1.0 for 100% train and no validation
+    percent = 0.9
+    if len(args) > 2:
+        if args[2] == "submission":
+            # take all the ratings to generate the submission file
+            percent = 1
+
     data = dict()
 
     total_rating_count = 0
-    with open(
-        inpt, "r"
-    ) as inpt_f:  # ratings.csv headers: userId,movieId,rating,timestamp
+    with open(inpt, "r") as inpt_f:  # ratings.csv headers: userId,movieId,rating
         for line in inpt_f:
             if "Id" in line:
                 continue
@@ -97,6 +104,7 @@ def main(args):
             rating for rating in userRatings if rating[0] in train_set_items
         ]
 
+    # Saves train and evaluation data files
     if len(args) <= 2:
         print("Training Data")
         print_stats(training_data)
@@ -108,6 +116,7 @@ def main(args):
         save_data_to_file(
             convert2CILdictionary(validation_data), out_prefix_valid + ".valid"
         )
+    # Saves submission data file
     elif args[2] == "submission":
         print("Submission Data")
         print_stats(training_data)

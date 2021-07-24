@@ -95,7 +95,7 @@ class UserItemRecDataProvider:
                         self._item_id_map[i_id_orig] = i_id
                         i_id += 1
 
-    def iterate_one_epoch(self):
+    def iterate_one_epoch(self, get_major_indx=False):
         data = self.data
         keys = list(data.keys())
         shuffle(keys)
@@ -106,11 +106,13 @@ class UserItemRecDataProvider:
             inds1 = []
             inds2 = []
             vals = []
+            major_indices = []
             for ind in range(s_ind, e_ind):
                 inds2 += [v[0] for v in data[keys[ind]]]
                 inds1 += [local_ind] * len([v[0] for v in data[keys[ind]]])
                 vals += [v[1] for v in data[keys[ind]]]
                 local_ind += 1
+                major_indices.append(keys[ind])
 
             i_torch = torch.LongTensor([inds1, inds2])
             v_torch = torch.FloatTensor(vals)
@@ -120,7 +122,10 @@ class UserItemRecDataProvider:
             )
             s_ind += self._batch_size
             e_ind += self._batch_size
-            yield mini_batch
+            if get_major_indx:
+                yield [mini_batch, major_indices]
+            else:
+                yield mini_batch
 
     def iterate_one_epoch_eval(self, for_inf=False):
         keys = list(self.data.keys())

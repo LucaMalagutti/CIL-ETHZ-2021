@@ -73,7 +73,7 @@ parser.add_argument(
 parser.add_argument(
     "--predictions_path",
     type=str,
-    default="out.json",
+    default="data/embs/",
     metavar="N",
     help="where to save predictions",
 )
@@ -130,7 +130,6 @@ def main():
         is_constrained=args.constrained,
         dp_drop_prob=args.drop_prob,
         last_layer_activations=not args.skip_last_layer_nl,
-        extract_embeddings=True,
     )
 
     path_to_model = Path(args.save_path)
@@ -169,7 +168,7 @@ def main():
         major_ratings = Variable(src.cuda().to_dense() if use_gpu else src.to_dense())
 
         # rencoder is built to output the deep features
-        embedding = rencoder(major_ratings).cpu().data.numpy()[0, :]
+        embedding = rencoder.extract_embeddings(major_ratings).cpu().data.numpy()[0, :]
 
         # get user idx as in the train data
         if args.major == "users":
@@ -191,7 +190,7 @@ def main():
     with open(emb_path, "wb") as outf:
         pickle.dump(embeddings_dict, outf)
 
-    print("Saved embedding dictionary to:", args.predictions_path)
+    print("Saved embedding dictionary to:", emb_path)
 
 
 if __name__ == "__main__":

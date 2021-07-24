@@ -1,3 +1,5 @@
+"""Contains an implementation of the RMSE loss"""
+
 import torch
 from torch import nn
 

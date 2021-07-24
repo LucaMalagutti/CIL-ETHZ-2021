@@ -8,6 +8,7 @@ baselines/.DS_STORE
 checkpoints/
 submissions/
 wandb/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -157,3 +158,5 @@ DeepRec++/data/embs/
 baselines/DeepRec/data/submission/CIL_data.submission
 DeepRec++/data/submission/CIL_data.submission
 DeepRec++/sweep.yaml
+DeepRec++/out.json
+DeepRec++/data/embs.zip
