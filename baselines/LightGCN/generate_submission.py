@@ -28,7 +28,7 @@ def generate_submission(args):
 
     model.eval()
     # Creates submission dataset
-    test_dataloader = get_dataloader(args, split="test")
+    test_dataloader = get_dataloader(args, split="test", shuffle=False)
 
     sub_data = pd.read_csv("data/sub.csv")
     scores_list = []

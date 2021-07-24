@@ -48,7 +48,7 @@ class CIL(Dataset):
         return self.train_df.shape[0]
 
 
-def get_dataloader(args, split="train"):
+def get_dataloader(args, split="train", shuffle=True):
     # wraps the CIL dataset into a Dataloader and returns it
 
     dataset = CIL(split)
@@ -56,7 +56,7 @@ def get_dataloader(args, split="train"):
     dataloader = DataLoader(
         dataset,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=shuffle,
         pin_memory=True,
         drop_last=False,
     )
