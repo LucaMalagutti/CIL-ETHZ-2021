@@ -1,11 +1,11 @@
-train90_file =      "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/train90/CIL_data90.train"
-train90aug_file = "./data/bags_KNN/CIL_data90aug.train.libfm"
-train100_file =     "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/train100/CIL_data100.train"
-train100aug_file = "./data/bags_KNN/CIL_data100aug.train.libfm"
-valid_file =        "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/valid/CIL_data10.valid"
-validaug_file = "./data/bags_KNN/CIL_dataaug.valid.libfm"
-sub_file =          "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/CIL_data.submission"
-subaug_file = "./data/bags_KNN/CIL_dataaug.submission.libfm"
+train90_file = "/baselines/DeepRec/data/train90/CIL_data90.train"
+train90aug_file = "data_features/bags_KNN/CIL_data90aug.train.libfm"
+train100_file = "/baselines/DeepRec/data/train100/CIL_data100.train"
+train100aug_file = "data_features/bags_KNN/CIL_data100aug.train.libfm"
+valid_file = "/baselines/DeepRec/data/valid/CIL_data10.valid"
+validaug_file = "data_features/bags_KNN/CIL_dataaug.valid.libfm"
+sub_file = "/baselines/DeepRec/data/submission/CIL_data.submission"
+subaug_file = "data_features/bags_KNN/CIL_dataaug.submission.libfm"
 
 user_bagofitems_dict = dict()
 item_bagofusers_dict = dict()

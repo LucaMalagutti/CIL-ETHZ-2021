@@ -1,15 +1,18 @@
-train90_file =      "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/train90/CIL_data90.train"
-train90hofm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bags_HOFM/HOFMtrain90.csv"
-train90aug_file = "./data/bags_HOFM/CIL_data90aug.train.libfm"
-train100_file =     "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/train100/CIL_data100.train"
-train100hofm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bags_HOFM/HOFMtrain100.csv"
-train100aug_file = "./data/bags_HOFM/CIL_data100aug.train.libfm"
-valid_file =        "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/valid/CIL_data10.valid"
-validhofm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bags_HOFM/HOFMval10.csv"
-validaug_file = "./data/bags_HOFM/CIL_dataaug.valid.libfm"
-sub_file =          "/home/ico/PycharmProjects/CIL-2021/baselines/DeepRec/data/submission/CIL_data.submission"
-subhofm_file = "/home/ico/PycharmProjects/CIL-2021/baselines/BayesianSVD/data/bags_HOFM/HOFMsub.csv"
-subaug_file = "./data/bags_HOFM/CIL_dataaug.submission.libfm"
+"""
+Converts split data to LibFM format
+and appends the implicit features: for each user the bag of rated items,
+for each item the bag of rating users
+"""
+import os
+
+train90_file =      "data_split/train90/CIL_data90.train"
+train90aug_file =   "data_features/bagofitemsusers/CIL_data90aug.train.libfm"
+train100_file =     "data_split/train100/CIL_data100.train"
+train100aug_file =  "data_features/bagofitemsusers/CIL_data100aug.train.libfm"
+valid_file =        "data_split/valid10/CIL_data10.valid"
+validaug_file =     "data_features/bagofitemsusers/CIL_dataaug.valid.libfm"
+sub_file =          "data_split/submission/CIL_data.submission"
+subaug_file =       "data_features/bagofitemsusers/CIL_dataaug.submission.libfm"
 
 user_bagofitems_dict = dict()
 item_bagofusers_dict = dict()
@@ -30,9 +33,7 @@ for in_file in [train100_file, sub_file]:
             item_bagofusers_dict[item].add(user)
 
 file_idx = 1
-for in_file, out_file, hofm_file in zip([train90_file, train100_file, valid_file, sub_file],
-                                        [train90aug_file, train100aug_file, validaug_file, subaug_file],
-                                        [train90hofm_file, train100hofm_file, validhofm_file, subhofm_file]):
+for in_file, out_file in zip([train90_file, train100_file, valid_file, sub_file], [train90aug_file, train100aug_file, validaug_file, subaug_file]):
     if file_idx <= 2:
         ext = ".train"
     else:
@@ -42,6 +43,7 @@ for in_file, out_file, hofm_file in zip([train90_file, train100_file, valid_file
 
     # rel_user.libfm file
     curr_out_file = out_file + "rel_user.libfm"
+    os.makedirs(os.path.dirname(curr_out_file), exist_ok=True)
     with open(curr_out_file, "w") as outf:
         line_num = 0
         for user in range(10000):
@@ -76,19 +78,6 @@ for in_file, out_file, hofm_file in zip([train90_file, train100_file, valid_file
             if line_num % 100000 == 0:
                 print(line_num)
 
-    # rel_hofm.libfm file
-    curr_out_file = out_file + "rel_hofm.libfm"
-    with open(curr_out_file, "w") as outf:
-        line_num = 0
-        with open(hofm_file) as hf:
-            for hf_line in hf.readlines():
-                hf_rating = hf_line[:-1]
-                outf.write("0 " + "0:" + hf_rating + " 1:0" + "\n")
-
-                line_num += 1
-                if line_num % 100000 == 0:
-                    print(line_num)
-
     # rel_user.train / .test file
     curr_out_file = out_file + "rel_user" + ext
     with open(curr_out_file, "w") as outf:
@@ -116,19 +105,6 @@ for in_file, out_file, hofm_file in zip([train90_file, train100_file, valid_file
                 item = str(int(item) - 1)  # items have ids between 0 and 999
 
                 outf.write(item + "\n")
-
-                line_num += 1
-                if line_num % 100000 == 0:
-                    print(line_num)
-
-    # rel_hofm.train / .test file
-    curr_out_file = out_file + "rel_hofm" + ext
-    with open(curr_out_file, "w") as outf:
-        line_num = 0
-        with open(in_file) as inf:
-            for in_line in inf.readlines():
-
-                outf.write(str(line_num) + "\n")
 
                 line_num += 1
                 if line_num % 100000 == 0:
