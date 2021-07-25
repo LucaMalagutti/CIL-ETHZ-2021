@@ -1,4 +1,4 @@
-""" Converts and splits the CIL competition dataset """
+"""Transforms the CIL competition dataset into a form usable by the autoencoder model"""
 
 import random
 import sys

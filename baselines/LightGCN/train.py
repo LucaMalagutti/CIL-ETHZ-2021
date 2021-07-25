@@ -1,3 +1,5 @@
+"""Contains training and evaluation procedures for the model"""
+
 import argparse
 import os
 
@@ -13,8 +15,9 @@ from torch import optim
 def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # Instantiates the model
     model = LightGCN(args)
-
+    # Loads a saved model to continue training, if given
     if args.restore_ckpt is not None:
         model.load_state_dict(torch.load(args.restore_ckpt))
     wandb.watch(model)
@@ -24,13 +27,18 @@ def train(args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     RMSE = RMSELoss()
-
+    # Loads training data
     train_dataloader = get_dataloader(args, split="train")
 
     training_loss = 0.0
     for i_epoch in range(args.epochs):
+        print(f"Starting epoch: {i_epoch}")
+        # Trains for an epoch
         for i_batch, batch in enumerate(train_dataloader):
             optimizer.zero_grad()
+
+            if torch.cuda.is_available():
+                batch = batch.cuda()
 
             scores = model(batch[:, :2])
             loss = RMSE(scores, batch[:, 2])
@@ -38,13 +46,16 @@ def train(args):
             optimizer.step()
 
             training_loss += loss.item()
+            # Prints epoch summary RMSE loss
             if i_batch % PRT_FREQ == (PRT_FREQ - 1):
+                print(f"LightGCN_train_loss {training_loss / PRT_FREQ}")
                 wandb.log({"LightGCN_train_loss": training_loss / PRT_FREQ})
                 training_loss = 0.0
 
         if i_epoch % EVAL_FREQ == (EVAL_FREQ - 1):
             evaluate(args, model)
 
+            # Saves the model and its hyperparams in the checkpoints/ folder after evaluation
             PATH = f"checkpoints/{i_epoch+1}_{args.name}.pth"
             torch.save(
                 {
@@ -60,6 +71,7 @@ def train(args):
 
 
 def evaluate(args, model):
+    # Evaluates the model on the val dataset
     model.eval()
     evaluate_dataloader = get_dataloader(args, split="eval")
 
@@ -68,11 +80,15 @@ def evaluate(args, model):
     rmse_eval = 0.0
 
     for _, batch in enumerate(evaluate_dataloader):
+        if torch.cuda.is_available():
+            batch = batch.cuda()
+
         scores = model(batch[:, :2])
         loss = RMSE(scores, batch[:, 2])
         rmse_eval += loss.item()
 
     rmse_eval /= len(evaluate_dataloader)
+    print(f"LightGCN_evaluation_RMSE: {rmse_eval}\n")
     wandb.log({"LightGCN_RMSE": rmse_eval})
 
 
@@ -95,10 +111,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
     parser.add_argument(
-        "--dropout", type=float, default=0.0, help="dropout probability 0 to disable it"
-    )
-    parser.add_argument(
-        "--epochs", type=int, default=1000, help="number of training epochs"
+        "--epochs", type=int, default=100, help="number of training epochs"
     )
     parser.add_argument(
         "--restore_ckpt",

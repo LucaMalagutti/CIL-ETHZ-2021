@@ -1,3 +1,5 @@
+"""Contains an implementation of the autoencoder model"""
+
 # Copyright (c) 2017 NVIDIA Corporation
 import numpy as np
 import torch
@@ -8,7 +10,7 @@ from torch.autograd import Variable
 
 
 def activation(input, kind):
-    # print("Activation: {}".format(kind))
+    # Returns selected activation function
     if kind == "selu":
         return F.selu(input)
     elif kind == "relu":
@@ -32,6 +34,7 @@ def activation(input, kind):
 
 
 def MSEloss(inputs, targets, size_average=False):
+    # Calculates MSELoss during training
     mask = targets != 0
     num_ratings = torch.sum(mask.float())
     criterion = nn.MSELoss(reduction="sum" if not size_average else "mean")
@@ -135,6 +138,7 @@ class AutoEncoder(nn.Module):
         print("******************************")
 
     def encode(self, x):
+        # First half of autoencoder
         for ind, w in enumerate(self.encode_w):
             x = activation(
                 input=F.linear(input=x, weight=w, bias=self.encode_b[ind]),
@@ -145,6 +149,7 @@ class AutoEncoder(nn.Module):
         return x
 
     def decode(self, z):
+        # Second half of autoencoder
         if self.is_constrained:
             for ind, w in enumerate(
                 list(reversed(self.encode_w))
@@ -158,8 +163,6 @@ class AutoEncoder(nn.Module):
                     if ind != self._last or self._last_layer_activations
                     else "none",
                 )
-                # if self._dp_drop_prob > 0 and ind!=self._last: # and no dp on last layer
-                #  z = self.drop(z)
         else:
             for ind, w in enumerate(self.decode_w):
                 z = activation(
@@ -169,13 +172,24 @@ class AutoEncoder(nn.Module):
                     if ind != self._last or self._last_layer_activations
                     else "none",
                 )
-                # if self._dp_drop_prob > 0 and ind!=self._last: # and no dp on last layer
-                #  z = self.drop(z)
         return z
+
+    def encode_deepfeatures(self, z):
+        """
+        Applies the first layer of decode to generate deep features
+        """
+        for ind, w in enumerate(self.decode_w):
+            z = activation(
+                input=F.linear(input=z, weight=w, bias=self.decode_b[ind]),
+                # last layer or decoder should not apply non linearities
+                kind=self._nl_type,
+            )
+            # returns immediately
+            return z
 
     def encode_deepfeatures_2nd(self, x):
         """
-        Applies the encoder and the first layer after decode to generate deep features of the 2nd bottleneck
+        Applies the encoder and the first layer of decode to generate deep features of the 2nd bottleneck
         """
         z = self.encode(x)
         for ind, w in enumerate(self.decode_w):

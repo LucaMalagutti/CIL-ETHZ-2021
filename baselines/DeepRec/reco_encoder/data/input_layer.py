@@ -1,5 +1,6 @@
-# Copyright (c) 2017 NVIDIA Corporation
 """Data Layer Classes"""
+
+# Copyright (c) 2017 NVIDIA Corporation
 from os import listdir, path
 from random import shuffle
 

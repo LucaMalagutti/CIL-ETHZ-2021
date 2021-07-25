@@ -1,4 +1,4 @@
-import os
+"""Contains a Pytorch implementation of the LightGCN model"""
 
 import numpy as np
 import scipy.sparse as sp
@@ -17,6 +17,7 @@ class LightGCN(nn.Module):
         self.n_users = 10000
         self.n_items = 1000
 
+        # Model layers
         self.embedding_user = torch.nn.Embedding(
             num_embeddings=self.n_users, embedding_dim=args.emb_size
         )
@@ -24,7 +25,7 @@ class LightGCN(nn.Module):
         self.embedding_item = torch.nn.Embedding(
             num_embeddings=self.n_items, embedding_dim=args.emb_size
         )
-
+        # Layer initialization
         if args.restore_ckpt is None:
             nn.init.normal_(self.embedding_user.weight, std=0.1)
             nn.init.normal_(self.embedding_item.weight, std=0.1)
@@ -32,6 +33,8 @@ class LightGCN(nn.Module):
         self.A_tilde = self.build_A_tilde()
 
     def build_A_tilde(self):
+        # Builds the data matrix necessary to perform graph convolution correctly
+        # More details can be found on the original paper
         A = sp.dok_matrix(
             (self.n_users + self.n_items, self.n_users + self.n_items),
             dtype=np.float32,
@@ -76,9 +79,8 @@ class LightGCN(nn.Module):
         curr_emb = torch.cat([users_emb, items_emb])
         embs_list = [curr_emb]
 
-        # TODO: Add graph dropout
-
         for _ in range(self.args.n_layers):
+            # Performs graph convolutions
             curr_emb = torch.sparse.mm(self.A_tilde, curr_emb)
             embs_list.append(curr_emb)
 
@@ -89,12 +91,14 @@ class LightGCN(nn.Module):
 
         users_idx = batch[:, 0]
         items_idx = batch[:, 1]
-
+        # Gets the embeddings of the users and the items contained in the batch
         batch_users_emb = users_emb[users_idx.long()]
         batch_items_emb = items_emb[items_idx.long()]
 
+        # Predicts ratings for all the user-item pairs in the batch
         scores_matrix = batch_users_emb @ batch_items_emb.T
 
+        # Extracts predicted rating for the given batch
         scores = torch.diagonal(scores_matrix, 0)
 
         return scores

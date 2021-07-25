@@ -1,3 +1,5 @@
+"""Trains and saves the autoencoder model"""
+
 # Copyright (c) 2017 NVIDIA Corporation
 import argparse
 import copy
@@ -10,13 +12,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from logger import Logger
+import wandb as wandb
 from reco_encoder.data import input_layer
 from reco_encoder.model import model
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
-
-import wandb as wandb
 
 parser = argparse.ArgumentParser(description="RecoEncoder")
 parser.add_argument(
@@ -32,7 +32,7 @@ parser.add_argument(
     "--noise_prob", type=float, default=0.0, metavar="N", help="noise probability"
 )
 parser.add_argument(
-    "--batch_size", type=int, default=64, metavar="N", help="global batch size"
+    "--batch_size", type=int, default=8, metavar="N", help="global batch size"
 )
 parser.add_argument(
     "--summary_frequency",
@@ -44,7 +44,7 @@ parser.add_argument(
 parser.add_argument(
     "--dense_refeeding_steps",
     type=int,
-    default=-1,
+    default=3,
     metavar="N",
     help="do data augmentation every X step",
 )
@@ -142,6 +142,7 @@ else:
 
 
 def do_eval(encoder, evaluation_data_layer):
+    """Performs evaluation iteration on the autoencoder"""
     encoder.eval()
     denom = 0.0
     total_epoch_loss = 0.0
@@ -155,49 +156,8 @@ def do_eval(encoder, evaluation_data_layer):
     return sqrt(total_epoch_loss / denom)
 
 
-def log_var_and_grad_summaries(
-    logger, layers, global_step, prefix, log_histograms=False
-):
-    """
-    Logs variable and grad stats for layer. Transfers data from GPU to CPU automatically
-    :param logger: TB logger
-    :param layers: param list
-    :param global_step: global step for TB
-    :param prefix: name prefix
-    :param log_histograms: (default: False) whether or not log histograms
-    :return:
-    """
-    for ind, w in enumerate(layers):
-        # Variables
-        w_var = w.data.cpu().numpy()
-        logger.scalar_summary(
-            "Variables/FrobNorm/{}_{}".format(prefix, ind),
-            np.linalg.norm(w_var),
-            global_step,
-        )
-        if log_histograms:
-            logger.histo_summary(
-                tag="Variables/{}_{}".format(prefix, ind),
-                values=w.data.cpu().numpy(),
-                step=global_step,
-            )
-
-        # Gradients
-        w_grad = w.grad.data.cpu().numpy()
-        logger.scalar_summary(
-            "Gradients/FrobNorm/{}_{}".format(prefix, ind),
-            np.linalg.norm(w_grad),
-            global_step,
-        )
-        if log_histograms:
-            logger.histo_summary(
-                tag="Gradients/{}_{}".format(prefix, ind),
-                values=w.grad.data.cpu().numpy(),
-                step=global_step,
-            )
-
-
 def set_optimizer(optimizer, lr, weight_decay, rencoder):
+    """Returns autoencoder optimizer"""
     optimizers = {
         "adam": optim.Adam(rencoder.parameters(), lr=lr, weight_decay=weight_decay),
         "adagrad": optim.Adagrad(
@@ -224,8 +184,8 @@ def set_optimizer(optimizer, lr, weight_decay, rencoder):
 
 
 def main():
-    logger = Logger(args.logdir)
-    # 1. Start a new run
+    """Trains the model"""
+
     wandb.init(
         project="CIL-2021",
         entity="spaghetticode",
@@ -244,8 +204,8 @@ def main():
         },
     )
 
+    # Loads training data
     params = dict()
-    # params["batch_size"] = args.batch_size
     params["batch_size"] = int(wandb.config["batch_size"])
     params["data_dir"] = args.path_to_train_data
     params["major"] = "users"
@@ -258,9 +218,9 @@ def main():
     print("Vector dim: {}".format(data_layer.vector_dim))
 
     if args.path_to_eval_data != "":
+        # Loads validation data
         print("Loading validation data")
         eval_params = copy.deepcopy(params)
-        # must set eval batch size to 1 to make sure no examples are missed
         eval_params["data_dir"] = args.path_to_eval_data
         eval_data_layer = input_layer.UserItemRecDataProvider(
             params=eval_params,
@@ -284,27 +244,28 @@ def main():
     if (wandb.config["layer3_dim"]) != "0":
         layer_sizes = layer_sizes + [int(wandb.config["layer3_dim"])]
 
+    # Initializes the model
     rencoder = model.AutoEncoder(
         layer_sizes=layer_sizes,
         nl_type=args.non_linearity_type,
         is_constrained=args.constrained,
-        # dp_drop_prob=args.drop_prob,
         dp_drop_prob=wandb.config["dropout"],
         last_layer_activations=not args.skip_last_layer_nl,
     )
     wandb.watch(rencoder)
+
     os.makedirs(args.logdir, exist_ok=True)
     model_checkpoint = args.logdir + "/model"
     path_to_model = Path(model_checkpoint)
+
+    # Loads already saved model, if present
     if path_to_model.is_file():
         print("Loading model from: {}".format(model_checkpoint))
         rencoder.load_state_dict(torch.load(model_checkpoint))
 
     print("######################################################")
-    print("######################################################")
     print("############# AutoEncoder Model: #####################")
     print(rencoder)
-    print("######################################################")
     print("######################################################")
 
     gpu_ids = [int(g) for g in args.gpu_ids.split(",")]
@@ -315,7 +276,7 @@ def main():
     if use_gpu:
         rencoder = rencoder.cuda()
 
-    # optimizer = set_optimizer(args.optimizer, args.learning_rate, args.weight_decay, rencoder)
+    # Initializes chosen model optimizer
     optimizer = set_optimizer(
         args.optimizer,
         wandb.config["learning_rate"],
@@ -330,9 +291,9 @@ def main():
     global_step = 0
 
     if args.noise_prob > 0.0:
-        # dp = nn.Dropout(p=args.noise_prob)
         dp = nn.Dropout(p=wandb.config["noise_prob"])
 
+    # Starts model training
     for epoch in range(int(args.num_epochs)):
         print("Doing epoch {} of {}".format(epoch, args.num_epochs))
         e_start_time = time.time()
@@ -358,27 +319,12 @@ def main():
                 # wandb.log({"train_RMSE": rmse})
                 print("t_loss_denom: ", t_loss_denom)
                 print("[%d, %5d] RMSE: %.7f" % (epoch, i, rmse))
-                logger.scalar_summary("Training_RMSE", rmse, global_step)
                 t_loss = 0
                 t_loss_denom = 0.0
-                log_var_and_grad_summaries(
-                    logger, rencoder.encode_w, global_step, "Encode_W"
-                )
-                log_var_and_grad_summaries(
-                    logger, rencoder.encode_b, global_step, "Encode_b"
-                )
-                if not rencoder.is_constrained:
-                    log_var_and_grad_summaries(
-                        logger, rencoder.decode_w, global_step, "Decode_W"
-                    )
-                log_var_and_grad_summaries(
-                    logger, rencoder.decode_b, global_step, "Decode_b"
-                )
 
             total_epoch_loss += loss.item()
             denom += 1
 
-            # if args.dense_refeeding_steps > 0:
             if wandb.config["dense_refeeding_steps"] > 0:
                 # Magic data augmentation trick happen here (dense refeeding)
                 for t in range(wandb.config["dense_refeeding_steps"]):
@@ -404,23 +350,22 @@ def main():
                 epoch, e_end_time - e_start_time, sqrt(total_epoch_loss / denom)
             )
         )
-        logger.scalar_summary(
-            "Training_RMSE_per_epoch", sqrt(total_epoch_loss / denom), epoch
-        )
-        logger.scalar_summary("Epoch_time", e_end_time - e_start_time, epoch)
+
+        # Evaluates model
         if epoch % args.save_every == 0 or epoch == args.num_epochs - 1:
             if args.path_to_eval_data != "":
                 eval_loss = do_eval(rencoder, eval_data_layer)
                 wandb.log({"val_RMSE": eval_loss, "epoch": epoch})
                 print("Epoch {} EVALUATION LOSS: {}".format(epoch, eval_loss))
-                logger.scalar_summary("EVALUATION_RMSE", eval_loss, epoch)
             else:
                 print("Skipping evaluation")
+            # Saves model at the end of an epoch
             print(
                 "Saving model to {}".format(model_checkpoint + ".epoch_" + str(epoch))
             )
             torch.save(rencoder.state_dict(), model_checkpoint + ".epoch_" + str(epoch))
 
+    # Saves model at the end of training
     print("Saving model to {}".format(model_checkpoint + ".last"))
     torch.save(rencoder.state_dict(), model_checkpoint + ".last")
 
