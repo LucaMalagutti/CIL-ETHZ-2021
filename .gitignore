@@ -160,3 +160,6 @@ DeepRec++/data/submission/CIL_data.submission
 DeepRec++/sweep.yaml
 DeepRec++/out.json
 DeepRec++/data/embs.zip
+
+# BayesianSVD++EDIT generated data and old files
+/BayesianSVD++EDIT/DeepRec_features/old/
