@@ -112,7 +112,7 @@ def main():
         dp_drop_prob=args.drop_prob,
         last_layer_activations=not args.skip_last_layer_nl,
         extract_deep_features=True,
-        deepf_layer="first_bottleneck"
+        deepf_layer="second_bottleneck"
     )
 
     path_to_model = Path(args.save_path)

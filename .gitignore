@@ -138,3 +138,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# BayesianSVD++EDIT generated data and old files
+/BayesianSVD++EDIT/DeepRec_features/old/

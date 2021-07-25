@@ -3,7 +3,7 @@ import sys
 
 
 def main(args):
-    DEBUG = True
+    DEBUG = False
     features = args[1]
     script_file = "script"
     script_file += features + ".sh"

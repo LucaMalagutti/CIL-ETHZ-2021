@@ -1,7 +1,8 @@
-"""Transforms the CIL competition dataset into a form usable by the autoencoder model"""
+""" Converts and splits the CIL competition dataset """
 
 import random
 import sys
+import os
 from math import floor
 
 
@@ -15,6 +16,7 @@ def print_stats(data):
 
 
 def save_data_to_file(data, filename):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, "w") as out:
         for item in data:
             for user, rating in data[item]:
@@ -52,6 +54,7 @@ def main(args):
         if args[2] == "submission":
             # take all the ratings to generate the submission file
             percent = 1
+            out_prefix_train = "data/train100/CIL_data100"
 
     data = dict()
 
@@ -115,6 +118,13 @@ def main(args):
         print_stats(validation_data)
         save_data_to_file(
             convert2CILdictionary(validation_data), out_prefix_valid + ".valid"
+        )
+    # Saves non-split train data file
+    elif args[2] == "submission" and inpt[-9:] == 'train.csv':
+        print("Training Data 100%")
+        print_stats(training_data)
+        save_data_to_file(
+            convert2CILdictionary(training_data), out_prefix_train + ".train"
         )
     # Saves submission data file
     elif args[2] == "submission":
