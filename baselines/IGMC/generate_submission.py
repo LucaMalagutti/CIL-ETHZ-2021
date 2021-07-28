@@ -1,3 +1,6 @@
+"""Contains the method that generates the submission .csv file in the 'submissions' folder"""
+
+
 import argparse
 import os
 import numpy as np
@@ -8,6 +11,7 @@ from preprocessing import *
 from models import *
 from util_functions import *
 from torch_geometric.data import DataLoader
+
 
 def generate_submission(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,12 +35,28 @@ def generate_submission(args):
         x: int(i+1 // (5 / args.num_relations))
         for i, x in enumerate(np.arange(1, 6).tolist())
     }
-    print('post_rating_map', post_rating_map)
-    adj_train = create_CIL_trainvaltest_split(False, True, rating_map, post_rating_map, args.ratio, 0, 0)[2]
+    adj_train, train_labels, train_u_indices, train_v_indices = create_CIL_trainvaltest_split(False, 1234, True, rating_map, post_rating_map, args.ratio, 0)[2:6]
+    train_indices = (train_u_indices, train_v_indices)
     val_test_appendix = 'submission'
     data_combo = (args.data_name, args.data_appendix, val_test_appendix)
+    data_combo_train = (args.data_name, args.data_appendix, 'valmode')
 
-    # create submission dataset
+    # create train graphs
+    train_graphs = MyDataset(
+        'data/{}{}/{}/train'.format(*data_combo_train),
+        adj_train,
+        train_indices,
+        train_labels,
+        args.hop,
+        args.sample_ratio,
+        args.max_nodes_per_hop,
+        u_features,
+        v_features,
+        class_values,
+        max_num=args.max_train_num
+    )
+
+    # create submission graphs
     sub_graphs = MyDataset(
         'data/{}{}/{}/test'.format(*data_combo),
         adj_train,
@@ -52,7 +72,7 @@ def generate_submission(args):
     )
 
     model = IGMC(
-        sub_graphs,
+        train_graphs,
         latent_dim=[32, 32, 32, 32],
         num_relations=args.num_relations,
         num_bases=4,
@@ -65,9 +85,6 @@ def generate_submission(args):
     )
     model.load_state_dict(saved_state_dict)
     sub_loader = DataLoader(sub_graphs, 1, shuffle=False)
-    print(len(sub_graphs))
-    print(len(sub_loader))
-    print(len(sub_data["rating"]))
     model.to(device)
     model.eval()
     scores_list = []
@@ -78,9 +95,6 @@ def generate_submission(args):
             out = model(data)
             scores_list.extend(out.tolist())
         torch.cuda.empty_cache()
-
-    print('scores_list:', len(scores_list))
-    print('sub_data["rating"]:', len(sub_data["rating"]))
 
     assert len(scores_list) == len(sub_data["rating"])
 
@@ -94,8 +108,7 @@ def generate_submission(args):
     )
     sub_data = sub_data[["Id", "Prediction"]]
 
-    # sub_name = args.restore_ckpt.split("_")[1].split(".")[0] + ".csv"
-    sub_name = 'submission.csv'
+    sub_name = 'IGMC_sub.csv'
     print('sub_name:', sub_name)
     sub_data.to_csv(os.path.join("submissions", sub_name), index=False)
 
@@ -138,6 +151,8 @@ if __name__ == "__main__":
                         help='what to append to save-names when saving datasets')
     parser.add_argument('--max-test-num', type=int, default=None,
                         help='set maximum number of test data to use')
+    parser.add_argument('--max-train-num', type=int, default=None,
+                        help='set maximum number of train data to use')
 
     args = parser.parse_args()
 

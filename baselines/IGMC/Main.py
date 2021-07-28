@@ -1,3 +1,5 @@
+"""Contains the parser and train/val pipeline"""
+
 import torch
 import numpy as np
 import sys, copy, math, time, pdb, warnings, traceback
@@ -107,7 +109,7 @@ parser.add_argument('--lr-decay-step-size', type=int, default=50,
                     help='decay lr by factor A every B steps')
 parser.add_argument('--lr-decay-factor', type=float, default=0.1,
                     help='decay lr by factor A every B steps')
-parser.add_argument('--epochs', type=int, default=80, metavar='N',
+parser.add_argument('--epochs', type=int, default=5, metavar='N',
                     help='number of epochs to train')
 parser.add_argument('--batch-size', type=int, default=50, metavar='N',
                     help='batch size during training')
@@ -154,7 +156,7 @@ if args.max_nodes_per_hop is not None:
 
 rating_map, post_rating_map = None, None
 if args.standard_rating:
-    if args.data_name in ['flixster', 'ml_10m', 'CIL']:  # original 0.5, 1, ..., 5
+    if args.data_name in ['flixster', 'ml_10m']:  # original 0.5, 1, ..., 5
         rating_map = {x: int(math.ceil(x)) for x in np.arange(0.5, 5.01, 0.5).tolist()}
     elif args.data_name == 'yahoo_music':  # original 1, 2, ..., 100
         rating_map = {x: (x-1)//20+1 for x in range(1, 101)}
@@ -249,7 +251,7 @@ elif args.data_name == 'CIL':
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
         val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices,
         test_v_indices, class_values
-    ) = create_CIL_trainvaltest_split(args.testing, True, rating_map, post_rating_map, args.ratio, 0, args.val_ratio
+    ) = create_CIL_trainvaltest_split(args.testing, 1234, True, rating_map, post_rating_map, args.ratio, 0, args.val_ratio
     )
 else:
     (
@@ -330,6 +332,7 @@ train_graphs = eval(dataset_class)(
     class_values,
     max_num=args.max_train_num
 )
+print('data/{}{}/{}/train'.format(*data_combo))
 if args.testing:
     dataset_class = 'MyDynamicDataset' if args.dynamic_test else 'MyDataset'
     test_graphs = eval(dataset_class)(

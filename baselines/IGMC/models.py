@@ -1,3 +1,6 @@
+"""Contains the NN classes and subclasses used for learning"""
+
+
 import torch
 import math
 import torch.nn as nn

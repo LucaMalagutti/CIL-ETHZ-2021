@@ -1,3 +1,6 @@
+"""Contains custom data structures needed to represent and process graphs, and utility functions for data processing"""
+
+
 from __future__ import print_function
 import numpy as np
 import random
@@ -16,6 +19,7 @@ warnings.simplefilter('ignore', ssp.SparseEfficiencyWarning)
 cur_dir = os.path.dirname(os.path.realpath(__file__))
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
+
 
 class SparseRowIndexer:
     def __init__(self, csr_matrix):

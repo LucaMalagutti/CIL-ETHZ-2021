@@ -1,12 +1,13 @@
+"""Contains utility functions for data representation and processing"""
+
+
 from __future__ import division
 from __future__ import print_function
-
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 import random
 import pdb
-
 # For automatic dataset downloading
 from urllib.request import urlopen
 from zipfile import ZipFile

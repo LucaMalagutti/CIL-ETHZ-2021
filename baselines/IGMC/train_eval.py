@@ -1,3 +1,6 @@
+"""Contains the methods needed to train and test the model"""
+
+
 import time
 import os
 import math
@@ -16,6 +19,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from util_functions import PyGGraph_to_nx
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -320,5 +324,3 @@ def visualize(model, graphs, res_dir, data_name, class_values, num=5, sort_by='p
     cbar.ax.tick_params(labelsize=22)
     f.savefig(os.path.join(res_dir, "visualization_{}_{}.pdf".format(data_name, sort_by)), 
             interpolation='nearest', bbox_inches='tight')
-    
-    

@@ -1,6 +1,8 @@
+"""Contains utility functions needed to load and preprocess the datasets"""
+
+
 from __future__ import division
 from __future__ import print_function
-
 import numpy as np
 import scipy.sparse as sp
 import pickle as pkl
@@ -8,7 +10,6 @@ import os
 import h5py
 import pandas as pd
 import pdb
-
 import sklearn
 from data_utils import load_data, map_data, download_dataset
 
@@ -588,11 +589,11 @@ def load_official_trainvaltest_split(dataset, testing=False, rating_map=None, po
         val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values
 
 
-def create_CIL_trainvaltest_split(testing=False, verbose=True, rating_map=None,
+def create_CIL_trainvaltest_split(testing=False, seed=1234, verbose=True, rating_map=None,
                               post_rating_map=None, ratio=1, test_ratio=0.1, val_ratio=0.05):
 
     data_pd = pd.read_csv("../../data/data_train.csv")
-    data_pd = sklearn.utils.shuffle(data_pd)
+    data_pd = sklearn.utils.shuffle(data_pd, random_state=seed)
     num_users, num_items = (10000, 1000)
     u_nodes, v_nodes, ratings = extract_users_items_predictions(data_pd)
     u_features = None
