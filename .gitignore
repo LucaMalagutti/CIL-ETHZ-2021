@@ -150,16 +150,18 @@ baselines/NNMF/config
 baselines/DeepRec/data/submission/CIL_data.submission
 baselines/DeepRec/data/train90/CIL_data.train
 baselines/DeepRec/data/valid/CIL_data.valid
-DeepRec++/data/train100/CIL_data100.train
-DeepRec++/data/train90/CIL_data90.train
-DeepRec++/data/valid/CIL_data10.valid
-DeepRec++/model_save/
-DeepRec++/data/embs/
+Experiments/DeepRec++/data/train100/CIL_data100.train
+Experiments/DeepRec++/data/train90/CIL_data90.train
+Experiments/DeepRec++/data/valid/CIL_data10.valid
+Experiments/DeepRec++/model_save/
+Experiments/DeepRec++/data/embs/
 baselines/DeepRec/data/submission/CIL_data.submission
-DeepRec++/data/submission/CIL_data.submission
-DeepRec++/sweep.yaml
-DeepRec++/out.json
-DeepRec++/data/embs.zip
+Experiments/DeepRec++/data/submission/CIL_data.submission
+Experiments/DeepRec++/sweep.yaml
+Experiments/DeepRec++/out.json
+Experiments/DeepRec++/data/embs.zip
 
 # BayesianSVD++EDIT generated data and old files
 /BayesianSVD++EDIT/DeepRec_features/old/
+
+/Ensemble_Mean

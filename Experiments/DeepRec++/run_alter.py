@@ -51,7 +51,7 @@ parser.add_argument(
     "--dropout", type=float, default=0.4, help="dropout drop probability"
 )
 parser.add_argument(
-    "--num_epochs", type=int, default=50, help="maximum number of epochs"
+    "--num_epochs", type=int, default=5, help="maximum number of epochs"
 )
 parser.add_argument(
     "--pretrain_num_epochs",
@@ -263,7 +263,7 @@ def main():
 
     items_optimizer = set_optimizer(
         args.optimizer,
-        learning_rate_items,
+        learning_rate_items / 100,
         weight_decay_items,
         items_encoder,
     )
@@ -273,7 +273,7 @@ def main():
 
     users_optimizer = set_optimizer(
         args.optimizer,
-        learning_rate_users,
+        learning_rate_users / 100,
         weight_decay_users,
         users_encoder,
     )
@@ -462,6 +462,7 @@ def main():
 
                 user_vectors = user_vectors.cuda() if use_gpu else user_vectors
                 item_vectors = item_vectors.cuda() if use_gpu else item_vectors
+                ratings = ratings.cuda() if use_gpu else ratings
 
                 user_outputs = users_encoder(user_vectors.float())
                 item_outputs = items_encoder(item_vectors.float())

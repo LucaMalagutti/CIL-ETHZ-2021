@@ -15,11 +15,11 @@ All the data files need to train and evaluate the model can be generated using t
 
 To generate the training and the validation dataset run
 
-```python data_utils/CIL_data_converter.py ../data/data_train.csv```
+```python data_utils/CIL_data_converter.py ../../data/data_train.csv```
 
 To generate the test (submission) dataset run
 
-```python data_utils/CIL_data_converter.py ../data/sample_submission.csv submission```
+```python data_utils/CIL_data_converter.py ../../data/sample_submission.csv submission```
 
 ## Commands
 All the following commands are to be run when inside this (```DeepRec++/```) subfolder.
