@@ -161,7 +161,8 @@ Experiments/DeepRec++/sweep.yaml
 Experiments/DeepRec++/out.json
 Experiments/DeepRec++/data/embs.zip
 
-# BayesianSVD++EDIT generated data and old files
-/BayesianSVD++EDIT/DeepRec_features/old/
+# BayesianSVD++Submission generated data and old files
+/BayesianSVD++Submission/DeepRec_features/old/
+/BayesianSVD++Submission/commands.txt
 
 /Ensemble_Mean
