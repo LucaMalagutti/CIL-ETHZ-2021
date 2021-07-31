@@ -21,6 +21,8 @@ if not follow the instructions in `/baselines/BayesianSVD`
 
 ## Ensemble
 
+Package requirements are listed in `Ensemble/Ensemble_requirements.txt`
+
 ### Level 1 models
 
 This folder already contains the level 1 model predictions needed for the ensemble.
